@@ -16,6 +16,7 @@ import {
   ICPUUsage,
   ILogMsg,
   IMediaPermission,
+  INetConnection,
   INotificationData,
   IRestartFloaterData,
   IScreenSharingIndicator,
@@ -69,6 +70,7 @@ export interface ILocalObject {
   showClientBannerCallback?: Array<
     (reason: string, action: ConfigUpdateType) => void
   >;
+  netEventCallbacks?: Map<string, (event: string, arg?: any) => void>;
 }
 
 const local: ILocalObject = {
@@ -770,6 +772,79 @@ export class SSFApi {
       local.showClientBannerCallback.push(callback);
     }
   }
+
+  /**
+   * Create a network connection
+   *
+   * @param path platform specific network path
+   * @param onData callback that is invoked when data is received over the connection
+   * @param onClose callback that is invoked when the connection is closed by the remote side
+   * @returns connection instance promise
+   */
+  public async createNetConnection(
+    path: string,
+    onData: (data: Uint8Array) => void,
+    onClose: () => void,
+  ): Promise<INetConnection> {
+    if (
+      typeof path === 'string' &&
+      typeof onData === 'function' &&
+      typeof onClose === 'function'
+    ) {
+      return new Promise<INetConnection>((resolve, reject) => {
+        ipcRenderer
+          .invoke(apiName.symphonyApi, {
+            cmd: apiCmds.createNetConnection,
+            path,
+          })
+          .then((connection) => {
+            if (!local.netEventCallbacks) {
+              local.netEventCallbacks = new Map();
+            }
+            local.netEventCallbacks.set(connection, (event, arg) => {
+              switch (event) {
+                case 'connected':
+                  const ret = {
+                    write: (data) => {
+                      ipcRenderer.invoke(apiName.symphonyApi, {
+                        cmd: apiCmds.sendNetData,
+                        connection,
+                        data,
+                      });
+                    },
+                    close: () => {
+                      ipcRenderer.invoke(apiName.symphonyApi, {
+                        cmd: apiCmds.closeNetConnection,
+                        connection,
+                      });
+                    },
+                  };
+                  resolve(ret);
+                  break;
+                case 'connection-failed':
+                  reject(arg);
+                  local.netEventCallbacks!.delete(connection);
+                  break;
+                case 'data':
+                  onData(arg);
+                  break;
+                case 'close':
+                  onClose();
+                  local.netEventCallbacks!.delete(connection);
+                  break;
+                default:
+                  throw new Error('invalid net event: ' + event);
+              }
+            });
+          })
+          .catch((err) => {
+            reject(err);
+          });
+      });
+    } else {
+      throw new Error('invalid net call');
+    }
+  }
 }
 
 /**
@@ -1010,6 +1085,18 @@ local.ipcRenderer.on('display-client-banner', (_event, args) => {
       callback(args.reason, args.action);
     }
   }
+});
+
+/**
+ * An event triggered by the main process when a network event occurs
+ * @param {string} connectionKey connection
+ * @param {string} event name of the event
+ * @param {any} arg optional data
+ */
+local.ipcRenderer.on('net-event', (_event, args) => {
+  local.netEventCallbacks
+    ?.get(args.connectionKey)
+    ?.call(null, args.event, args?.arg);
 });
 
 // Invoked whenever the app is reloaded/navigated

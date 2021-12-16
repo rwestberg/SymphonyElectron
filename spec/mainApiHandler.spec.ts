@@ -7,6 +7,7 @@ import * as windowActions from '../src/app/window-actions';
 import { windowHandler } from '../src/app/window-handler';
 import * as utils from '../src/app/window-utils';
 import { apiCmds, apiName } from '../src/common/api-interface';
+import { netHandler } from '../src/app/net-handler';
 import { logger } from '../src/common/logger';
 import { BrowserWindow, ipcMain } from './__mocks__/electron';
 
@@ -482,6 +483,17 @@ describe('main api handler', () => {
       };
       ipcMain.send(apiName.symphonyApi, value);
       expect(fromWebContentsMocked.getNativeWindowHandle).toBeCalledTimes(1);
+    });
+
+    it('should call `netHandler.connect` correctly', () => {
+      const spy = jest.spyOn(netHandler, 'connect');
+      const value = {
+        cmd: apiCmds.createNetConnection,
+        path: '/a/path',
+      };
+      const expectedValue = [{ send: expect.any(Function) }, '/a/path'];
+      ipcMain.send(apiName.symphonyApi, value);
+      expect(spy).toBeCalledWith(...expectedValue);
     });
   });
 });

@@ -63,6 +63,9 @@ export enum apiCmds {
   onSwiftSearchMessage = 'on-shift-search-message',
   getNativeWindowHandle = 'get-native-window-handle',
   getCitrixMediaRedirectionStatus = 'get-citrix-media-redirection-status',
+  createNetConnection = 'create-net-connection',
+  sendNetData = 'send-net-data',
+  closeNetConnection = 'close-net-connection',
 }
 
 export enum apiName {
@@ -111,6 +114,8 @@ export interface IApiArgs {
   mediaStatus: IMediaPermission;
   newPodUrl: string;
   swiftSearchData: any;
+  connection: string;
+  data: Uint8Array;
 }
 
 export type Themes = 'light' | 'dark';
@@ -219,11 +224,11 @@ export interface IDownloadManager {
 export interface IMediaPermission {
   camera: 'not-determined' | 'granted' | 'denied' | 'restricted' | 'unknown';
   microphone:
-    | 'not-determined'
-    | 'granted'
-    | 'denied'
-    | 'restricted'
-    | 'unknown';
+  | 'not-determined'
+  | 'granted'
+  | 'denied'
+  | 'restricted'
+  | 'unknown';
   screen: 'not-determined' | 'granted' | 'denied' | 'restricted' | 'unknown';
 }
 
@@ -265,3 +270,8 @@ export type NotificationActionCallback = (
 ) => void;
 
 export type ConfigUpdateType = 'restart' | 'reload';
+
+export interface INetConnection {
+  write(data: Uint8Array): void;
+  close(): void;
+}
