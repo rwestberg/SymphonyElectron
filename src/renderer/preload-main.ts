@@ -88,6 +88,7 @@ if (ssfWindow.ssf) {
     setZoomLevel: ssfWindow.ssf.setZoomLevel,
     getZoomLevel: ssfWindow.ssf.getZoomLevel,
     supportedSettings: ssfWindow.ssf.supportedSettings,
+    getSessionId: ssfWindow.ssf.getSessionId,
   });
 }
 

@@ -730,6 +730,16 @@ export class SSFApi {
   public supportedSettings(): string[] {
     return SUPPORTED_SETTINGS || [];
   }
+
+  /**
+   * Get the current session id.
+   * @returns current session id
+   */
+  public getSessionId(): Promise<number> {
+    return ipcRenderer.invoke(apiName.symphonyApi, {
+      cmd: apiCmds.getSessionId,
+    });
+  }
 }
 
 /**

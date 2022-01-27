@@ -276,6 +276,11 @@
     Full path to MSI <input type="text" id="update-file" />
     <br />
     <button id="run-update">Update</button>
+
+    <hr />
+    <p>Session ID:</p>
+    <button id="get-session-id">Get session ID</button>
+    <input type="text" id="text-session-id" />
     <hr />
     <br />
   </body>
@@ -323,6 +328,7 @@
       checkMediaPermission: 'check-media-permission',
       restartApp: 'restart-app',
       autoUpdate: 'auto-update',
+      getSessionId: 'get-session-id',
     };
     let requestId = 0;
 
@@ -1174,6 +1180,21 @@
         window.manaSSF.restartApp();
       } else {
         postMessage(apiCmds.restartApp);
+      }
+    });
+
+    document.getElementById('get-session-id').addEventListener('click', () => {
+      const resultCallback = (id) => {
+        document.getElementById('text-session-id').value = id;
+      };
+      if (window.ssf) {
+        window.ssf.getSessionId().then(resultCallback);
+      } else if (window.manaSSF) {
+        window.manaSSF.getSessionId().then(resultCallback);
+      } else {
+        postRequest(apiCmds.getSessionId, null, {
+          successCallback: resultCallback,
+        });
       }
     });
   </script>

@@ -26,6 +26,7 @@ import notificationHelper from './notifications/notification-helper';
 import { protocolHandler } from './protocol-handler';
 import { finalizeLogExports, registerLogRetriever } from './reports-handler';
 import { screenSnippet } from './screen-snippet-handler';
+import { getSessionId } from './session-handler';
 import { activate, handleKeyPress } from './window-actions';
 import { ICustomBrowserWindow, windowHandler } from './window-handler';
 import {
@@ -433,6 +434,8 @@ ipcMain.handle(
             : false;
         }
         break;
+      case apiCmds.getSessionId:
+        return getSessionId();
     }
     return;
   },
