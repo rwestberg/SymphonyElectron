@@ -845,6 +845,16 @@ export class SSFApi {
       throw new Error('invalid net call');
     }
   }
+
+  /**
+   * Get the current session id.
+   * @returns current session id
+   */
+  public getSessionId(): Promise<number> {
+    return ipcRenderer.invoke(apiName.symphonyApi, {
+      cmd: apiCmds.getSessionId,
+    });
+  }
 }
 
 /**

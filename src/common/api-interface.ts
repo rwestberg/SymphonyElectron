@@ -66,6 +66,7 @@ export enum apiCmds {
   createNetConnection = 'create-net-connection',
   sendNetData = 'send-net-data',
   closeNetConnection = 'close-net-connection',
+  getSessionId = 'get-session-id',
 }
 
 export enum apiName {

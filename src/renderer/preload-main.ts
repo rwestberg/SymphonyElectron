@@ -93,6 +93,7 @@ if (ssfWindow.ssf) {
       ssfWindow.ssf.getCitrixMediaRedirectionStatus,
     registerClientBanner: ssfWindow.ssf.registerClientBanner,
     createNetConnection: ssfWindow.ssf.createNetConnection,
+    getSessionId: ssfWindow.ssf.getSessionId,
   });
 }
 
