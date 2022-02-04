@@ -1,7 +1,7 @@
 import { WebContents } from 'electron';
 import { createConnection, Socket } from 'net';
 
-const allowList = /^\\\\\?\\pipe\\c9Controller$/;
+const allowList = /^\\\\\?\\pipe\\symphony-[a-z0-9-]+$/;
 
 class NetHandler {
   private _connections: Map<string, Socket> = new Map();
