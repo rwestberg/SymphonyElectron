@@ -1,5 +1,6 @@
 import { WebContents } from 'electron';
 import { createConnection, Socket } from 'net';
+import { logger } from '../common/logger';
 
 const allowList = /^\\\\\?\\pipe\\symphony-[a-z0-9-]+$/;
 
@@ -20,8 +21,10 @@ class NetHandler {
 
     const connectionKey = 'net' + this._identifier++;
     let connectionSuccess = false;
+    logger.info('net-handler: Connecting to ' + path);
     const client = createConnection(path, () => {
       connectionSuccess = true;
+      logger.info('net-handler: Connected to ' + path);
       sender.send('net-event', { event: 'connected', connectionKey });
     });
     this._connections.set(connectionKey, client);
@@ -60,8 +63,19 @@ class NetHandler {
    * @param connectionKey connection identifier
    */
   public close(connectionKey: string) {
+    logger.info('net-handler: Closing ' + connectionKey);
     this._connections.get(connectionKey)?.destroy();
     this._connections.delete(connectionKey);
+  }
+
+  /**
+   * Closes all network connections
+   */
+  public closeAll() {
+    logger.info('net-handler: Closing all connections');
+    for (const key of this._connections.keys()) {
+      this.close(key);
+    }
   }
 }
 

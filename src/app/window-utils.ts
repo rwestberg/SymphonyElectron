@@ -47,6 +47,7 @@ import {
 
 import { notification } from '../renderer/notification';
 import { mainEvents } from './main-event-handler';
+import { netHandler } from './net-handler';
 interface IStyles {
   name: styleNames;
   content: string;
@@ -410,6 +411,9 @@ export const sanitize = (windowName: string): void => {
     }
     // Closes all the child windows
     windowHandler.closeAllWindows();
+
+    // Close all open network connections
+    netHandler.closeAll();
   }
 };
 
@@ -754,6 +758,9 @@ export const reloadWindow = (browserWindow: ICustomBrowserWindow) => {
     mainWebContents.reload();
 
     windowHandler.closeAllWindows();
+
+    // Close all open network connections
+    netHandler.closeAll();
 
     windowHandler.execCmd(windowHandler.screenShareIndicatorFrameUtil, []);
 
