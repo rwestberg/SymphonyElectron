@@ -165,7 +165,7 @@
     "electron-fetch": "1.4.0",
     "electron-log": "4.0.7",
     "electron-spellchecker": "git+https://github.com/finos/electron-spellchecker.git#v2.3.6",
-    "ffi-napi": "3.0.0",
+    "ffi-napi": "^2.4.5",
     "filesize": "6.1.0",
     "lazy-brush": "^1.0.1",
     "react": "16.13.0",
