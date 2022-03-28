@@ -33,7 +33,12 @@ class NetHandler {
       sender.send('net-event', { event: 'data', connectionKey, arg: data });
     });
     client.on('close', () => {
-      sender.send('net-event', { event: 'close', connectionKey });
+      // If the connection is still in the map, the close is coming from the server side, or
+      // is otherwise unexpected. In this case, send close event to the extension so it can go
+      // into a reconnect loop.
+      if (this._connections.has(connectionKey)) {
+        sender.send('net-event', { event: 'close', connectionKey });
+      }
     });
     client.on('error', (err: Error) => {
       // If the connection is already established, any error will also result in a 'close' event
@@ -64,8 +69,9 @@ class NetHandler {
    */
   public close(connectionKey: string) {
     logger.info('net-handler: Closing ' + connectionKey);
-    this._connections.get(connectionKey)?.destroy();
+    const connection = this._connections.get(connectionKey);
     this._connections.delete(connectionKey);
+    connection?.destroy();
   }
 
   /**
