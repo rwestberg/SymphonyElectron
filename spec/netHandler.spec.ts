@@ -32,7 +32,7 @@ describe('net handler', () => {
     it('success', () => {
       const connection = netHandler.connect(
         webContentsMocked as any,
-        '\\\\?\\pipe\\c9Controller',
+        '\\\\?\\pipe\\symphony-1-1',
       );
       expect(connection).toBeTruthy();
       expect(webContentsMocked.send).toHaveBeenCalledWith(
@@ -44,7 +44,7 @@ describe('net handler', () => {
     it('data', () => {
       const connection = netHandler.connect(
         webContentsMocked as any,
-        '\\\\?\\pipe\\c9Controller',
+        '\\\\?\\pipe\\symphony-1-1',
       );
       expect(connection).toBeTruthy();
       mockConnectionEvents.get('data')('the data');
