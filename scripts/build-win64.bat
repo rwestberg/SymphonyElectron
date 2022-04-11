@@ -160,6 +160,9 @@ IF %errorlevel% neq 0 (
 	exit /b -1
 )
 
+echo "Verifying contents of of the dist directory"
+dir %distDir% /s
+
 echo "Building new installer with Wix Sharp"
 call "BuildWixSharpInstaller.bat"
 
