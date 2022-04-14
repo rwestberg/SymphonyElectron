@@ -1263,7 +1263,7 @@ export class WindowHandler {
       opts.alwaysOnTop = true;
     }
 
-    if (isWindowsOS && this.mainWindow) {
+    if (this.mainWindow) {
       opts.parent = this.mainWindow;
     }
 
@@ -1417,7 +1417,7 @@ export class WindowHandler {
         alwaysOnTop: true,
         autoHideMenuBar: true,
         frame: false,
-        modal: true,
+        modal: false,
         height: isMac ? 519 : 523,
         width: 580,
         show: false,
@@ -1427,10 +1427,6 @@ export class WindowHandler {
         devTools: isDevEnv,
       },
     );
-    const focusedWindow = BrowserWindow.getFocusedWindow();
-    if (focusedWindow && windowExists(focusedWindow) && isWindowsOS) {
-      opts.parent = focusedWindow;
-    }
 
     this.screenPickerWindow = createComponentWindow('screen-picker', opts);
     this.moveWindow(this.screenPickerWindow);
@@ -1472,7 +1468,8 @@ export class WindowHandler {
 
       window.send('start-share' + id, source);
       if (this.screenPickerWindow && windowExists(this.screenPickerWindow)) {
-        this.screenPickerWindow.close();
+        // SDA-3635 hack
+        setTimeout(() => this.screenPickerWindow?.close(), 500);
       }
     });
     this.screenPickerWindow.once('closed', () => {
@@ -1505,13 +1502,20 @@ export class WindowHandler {
       {
         width: 360,
         height: isMac ? 270 : 295,
+        alwaysOnTop: true,
+        skipTaskbar: true,
+        resizable: false,
         show: false,
         modal: true,
-        autoHideMenuBar: true,
-        resizable: false,
+        frame: false,
+        transparent: true,
+        fullscreenable: false,
+        acceptFirstMouse: true,
       },
       {
-        devTools: isDevEnv,
+        sandbox: IS_SAND_BOXED,
+        nodeIntegration: IS_NODE_INTEGRATION_ENABLED,
+        devTools: true,
       },
     );
     opts.parent = window;
@@ -1674,7 +1678,7 @@ export class WindowHandler {
           width: 592,
           height: 48,
           show: false,
-          modal: true,
+          modal: false,
           frame: false,
           focusable: true,
           transparent: true,
@@ -1799,7 +1803,7 @@ export class WindowHandler {
         width: frameWidth,
         height: frameHeight,
         frame: false,
-        transparent: true,
+        transparent: false,
         alwaysOnTop: true,
       },
       {

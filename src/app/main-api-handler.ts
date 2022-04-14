@@ -2,6 +2,7 @@ import {
   app,
   BrowserWindow,
   clipboard,
+  desktopCapturer,
   dialog,
   ipcMain,
   systemPreferences,
@@ -446,6 +447,12 @@ ipcMain.handle(
           microphone,
           screen,
         };
+      case apiCmds.getSources:
+        const { types, thumbnailSize } = arg;
+        return desktopCapturer.getSources({
+          types,
+          thumbnailSize,
+        });
       case apiCmds.isMisspelled:
         if (typeof arg.word === 'string') {
           return windowHandler.spellchecker
