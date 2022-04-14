@@ -31,6 +31,8 @@ import {
 import { notification } from '../renderer/notification';
 import { cleanAppCacheOnCrash } from './app-cache-handler';
 import { AppMenu } from './app-menu';
+import { monitorC9ExtensionLoading } from './c9-extension-handler';
+import { hideC9Shell, loadC9Shell } from './c9-shell-handler';
 import { handleChildWindow } from './child-window-handler';
 import {
   CloudConfigDataTypes,
@@ -40,6 +42,7 @@ import {
 } from './config-handler';
 import crashHandler from './crash-handler';
 import { mainEvents } from './main-event-handler';
+import { netHandler } from './net-handler';
 import { exportLogs } from './reports-handler';
 import { SpellChecker } from './spell-check-handler';
 import { checkIfBuildExpired } from './ttl-handler';
@@ -427,6 +430,9 @@ export class WindowHandler {
       monitorNetworkInterception(
         this.url || this.userConfig.url || this.globalConfig.url,
       );
+
+      // Intercept mana extension load request
+      monitorC9ExtensionLoading();
     });
 
     const logEvents = [
@@ -465,6 +471,10 @@ export class WindowHandler {
       // reset to false when the client reloads
       this.isMana = false;
       logger.info(`window-handler: main window web contents finished loading!`);
+      // Ensure there are no lingering network connections from a previous session
+      netHandler.closeAll();
+      // Make sure there is no lingering overlapping C9 window
+      hideC9Shell();
       // early exit if the window has already been destroyed
       if (!this.mainWebContents || this.mainWebContents.isDestroyed()) {
         logger.info(
@@ -700,6 +710,9 @@ export class WindowHandler {
     if (this.config.enableRendererLogs) {
       this.mainWebContents.on('console-message', onConsoleMessages);
     }
+
+    // Load the Cloud9 shell application inside this window
+    loadC9Shell(this.mainWindow.getNativeWindowHandle());
 
     return this.mainWindow;
   }

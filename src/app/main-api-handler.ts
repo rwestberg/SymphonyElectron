@@ -17,11 +17,17 @@ import { logger } from '../common/logger';
 import { activityDetection } from './activity-detection';
 import { analytics } from './analytics-handler';
 import appStateHandler from './app-state-handler';
+import {
+  IShellCommand,
+  sendC9ShellCommand,
+  setC9ShellMessageCallback,
+} from './c9-shell-handler';
 import { getCitrixMediaRedirectionStatus } from './citrix-handler';
 import { CloudConfigDataTypes, config, ICloudConfig } from './config-handler';
 import { downloadHandler } from './download-handler';
 import { mainEvents } from './main-event-handler';
 import { memoryMonitor } from './memory-monitor';
+import { netHandler } from './net-handler';
 import notificationHelper from './notifications/notification-helper';
 import { protocolHandler } from './protocol-handler';
 import { finalizeLogExports, registerLogRetriever } from './reports-handler';
@@ -440,8 +446,6 @@ ipcMain.handle(
           microphone,
           screen,
         };
-      default:
-        break;
       case apiCmds.isMisspelled:
         if (typeof arg.word === 'string') {
           return windowHandler.spellchecker
@@ -459,6 +463,22 @@ ipcMain.handle(
         break;
       case apiCmds.getCitrixMediaRedirectionStatus:
         return getCitrixMediaRedirectionStatus();
+      case apiCmds.createNetConnection:
+        return netHandler.connect(event.sender, arg.path);
+      case apiCmds.sendNetData:
+        netHandler.write(arg.connection, arg.data);
+        break;
+      case apiCmds.closeNetConnection:
+        netHandler.close(arg.connection);
+        break;
+      case apiCmds.sendCloud9Command:
+        sendC9ShellCommand(arg.c9Command as IShellCommand);
+        break;
+      case apiCmds.setCloud9MessageCallback:
+        setC9ShellMessageCallback(event.sender);
+        break;
+      default:
+        break;
     }
     return;
   },

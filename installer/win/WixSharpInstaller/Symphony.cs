@@ -54,7 +54,7 @@ class Script
         //     StopOn = SvcEvent.InstallUninstall_Wait,
         //     RemoveOn = SvcEvent.Uninstall_Wait,
         // };  
-        
+
         // Create a wixsharp project instance and assign the project name to it, and a hierarchy of all files to include
         // Files are taken from multiple locations, and not all files in each location should be included, which is why
         // the file list is rather long and explicit. At some point we might make the `dist` folder match exactly the
@@ -147,6 +147,9 @@ class Script
                 ),
                 new Dir(@"swiftshader",
                     new Files(@"..\..\..\dist\win-unpacked\swiftshader\*.*")
+                ),
+                new Dir(@"cloud9",
+                    new Files(@"..\..\..\dist\win-unpacked\cloud9\*.*")
                 )
             ),
 

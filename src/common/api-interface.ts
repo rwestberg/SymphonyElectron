@@ -63,6 +63,11 @@ export enum apiCmds {
   onSwiftSearchMessage = 'on-shift-search-message',
   getNativeWindowHandle = 'get-native-window-handle',
   getCitrixMediaRedirectionStatus = 'get-citrix-media-redirection-status',
+  createNetConnection = 'create-net-connection',
+  sendNetData = 'send-net-data',
+  closeNetConnection = 'close-net-connection',
+  sendCloud9Command = 'send-cloud9-command',
+  setCloud9MessageCallback = 'set-cloud9-message-callback',
 }
 
 export enum apiName {
@@ -111,6 +116,9 @@ export interface IApiArgs {
   mediaStatus: IMediaPermission;
   newPodUrl: string;
   swiftSearchData: any;
+  connection: string;
+  data: Uint8Array;
+  c9Command: object;
 }
 
 export type Themes = 'light' | 'dark';
@@ -263,3 +271,8 @@ export type NotificationActionCallback = (
   event: NotificationActions,
   data: INotificationData,
 ) => void;
+
+export interface INetConnection {
+  write(data: Uint8Array): void;
+  close(): void;
+}
