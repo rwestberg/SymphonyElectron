@@ -278,7 +278,7 @@ class C9ShellHandler {
           this._isPoppedOut = true;
           this._sendStatus();
         }
-        const titleMatch = line.match(/C9SHELLTITLE=\(([A-Za-z0-9=]+)\)/);
+        const titleMatch = line.match(/C9SHELLTITLE=\(([A-Za-z0-9+/=]+)\)/);
         if (titleMatch) {
           this._shellTitle = Buffer.from(titleMatch[1], 'base64').toString();
           logger.info('c9-shell: received title', this._shellTitle);
