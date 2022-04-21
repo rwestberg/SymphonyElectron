@@ -22,14 +22,13 @@ notifyPRStatus("tests/unit") {
         try {
             common.withNvmVer {
                 try {
-                    stage("Install") {
-                        sh "npm install"
-                    }
-                    stage("Build") {
-                        sh "npm run prebuild"
-                    }
-                    stage("Unit Test") {
-                        sh "npm run test:unit"
+                    stage("Run unit tests") {
+                        bat """
+                            call "C:\\Program Files (x86)\\Microsoft Visual Studio\\2017\\Community\\VC\\Auxiliary\\Build\\vcvars64.bat"
+                            call npm install
+                            call npm run prebuild
+                            call npm run test:unit
+                        """
                     }
                 } finally {
                     stage("Post Actions") {
