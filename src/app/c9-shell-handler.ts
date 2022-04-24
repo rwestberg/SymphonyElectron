@@ -162,15 +162,20 @@ class C9ShellHandler {
 
     const dpi = user32.GetDpiForWindow(parentHwnd);
     const scale = dpi / 96.0;
-    logger.info(`c9-shell: Browser DPI is ${dpi} - scale factor is ${scale}`);
+    const mainWebContents = windowHandler.getMainWebContents();
+    const clientZoom = mainWebContents?.getZoomFactor() || 1.0;
+    const zoomedScale = scale * clientZoom;
+    logger.info(
+      `c9-shell: Browser DPI is ${dpi} - scale factor is ${scale} - final scale factor is ${zoomedScale}`,
+    );
 
     const ret = user32.SetWindowPos(
       hwnd,
       0,
-      Math.round(x * scale),
-      Math.round((y + 32) * scale),
-      Math.round(width * scale),
-      Math.round(height * scale),
+      Math.round(x * zoomedScale),
+      Math.round((y + 32) * zoomedScale),
+      Math.round(width * zoomedScale),
+      Math.round(height * zoomedScale),
       flags,
     );
     if (!ret) {
