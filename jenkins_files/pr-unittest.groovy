@@ -4,7 +4,7 @@
 
 properties([
     parameters(withRunConfig([
-        string(name: "JENKINS_NODE_LABEL", defaultValue: "fe-test-win", description: "Label for the jenkins node which the job will run on")
+        string(name: "JENKINS_NODE_LABEL", defaultValue: "syc9-test-win", description: "Label for the jenkins node which the job will run on")
     ])),
 
     buildDiscarder(logRotator(artifactNumToKeepStr: '15', numToKeepStr: '15'))
