@@ -5,9 +5,8 @@
 properties([
     parameters(withRunConfig([
         string(name: "JENKINS_NODE_LABEL", defaultValue: "syc9-test-win", description: "Label for the jenkins node which the job will run on"),
-        string(name: "C9_INTEGRATION_VERSION", defaultValue: "*", description: "The C9 integration version to bundle. Use '*' for the latest version."),
-        string(name: "C9_TRADER_INSTALLER", description: "The C9 Trader installer to bundle. Provide a link to the MSI file."),
-        string(name: "SDA_INSTALLER", description: "The standard Symphony Desktop Application installer to extract additional dependencies from. Provide a link to the MSI file."),
+        string(name: "SDA_C9_DEPS", defaultValue: "https://jenkins.rtc.dev.symphony.com/job/SFE%20-%20Cloud9%20Integration/job/SDA%20Bundle%20Dependencies/lastSuccessfulBuild/artifact/syc9-sda-deps.zip", description: "The C9 dependencies bundle to add to the installer."),
+        string(name: "SDA_LIBS", defaultValue: "https://jenkins.rtc.dev.symphony.com/job/SFE%20-%20Cloud9%20Integration/job/SDA%20Bundle%20Libraries/lastSuccessfulBuild/artifact/syc9-sda-libraries.zip", description: "The SDA library bundle to add to the installer."),
     ])),
 
     buildDiscarder(logRotator(artifactNumToKeepStr: '15', numToKeepStr: '15'))
@@ -34,40 +33,18 @@ node(params.JENKINS_NODE_LABEL) {
                         call npm run unpacked-win
                     """
                 }
-                stage("Fetch C9-SY-extension") {
-                    artifactory.download(
-                        name:   "services/c9-integration",
-                        file:   "c9-integration-${params.C9_INTEGRATION_VERSION}.tgz",
-                        target: "download/"
-                    )
+                stage("Fetch C9 dependencies") {
+                    sh "mkdir -p download"
+                    sh "curl -L '${params.SDA_C9_DEPS}' -o download/syc9-sda-deps.zip"
                 }
-                stage("Unpack C9-SY-extension") {
-                    sh "tar -C download -xzvf download/c9-integration-*.tgz"
+                stage("Extract C9 dependencies") {
+                    bat "powershell Expand-Archive download\\syc9-sda-deps.zip dist\\win-unpacked"
                 }
-                stage("Fetch C9 Trader installer") {
-                    sh "curl -L '${params.C9_TRADER_INSTALLER}' -o download/C9Installer.msi"
+                stage("Fetch SDA libraries") {
+                    sh "curl -L '${params.SDA_LIBS}' -o download/syc9-sda-libraries.zip"
                 }
-                stage("Extract C9 Trader") {
-                    bat "msiexec /a download\\C9Installer.msi /qn TARGETDIR=\"${env.WORKSPACE}\\download\\C9Installer\""
-                    bat "dir /s download\\C9Installer"
-                }
-                stage("Fetch base SDA installer") {
-                    sh "curl -L '${params.SDA_INSTALLER}' -o download/SDAInstaller.msi"
-                }
-                stage("Extract base SDA") {
-                    bat "msiexec /a download\\SDAInstaller.msi /qn TARGETDIR=\"${env.WORKSPACE}\\download\\SDAInstaller\""
-                    bat "dir /s download\\SDAInstaller"
-                }
-                stage("Move SDA library folder into place") {
-                    sh "mv download/SDAInstaller/ProgramFiles64Folder/Symphony/library ./"
-                }
-                stage("Move dependencies into place") {
-                    sh "mkdir -p dist/win-unpacked/cloud9/integration dist/win-unpacked/cloud9/shell"
-                    sh "mv download/c9-integration-*/extension.js dist/win-unpacked/cloud9/integration/"
-                    sh "mv download/C9Installer/ProgramFilesPath/Cloud9\\ Technologies\\ LLC/C9Trader/* dist/win-unpacked/cloud9/shell/"
-                    sh "rm -rf dist/win-unpacked/cloud9/shell/x86"
-                    bat "del /s /q dist\\win-unpacked\\cloud9\\shell\\*.pdb"
-                    bat "dir /s dist\\win-unpacked"
+                stage("Extract SDA libraries") {
+                    bat "powershell Expand-Archive download\\syc9-sda-libraries.zip ."
                 }
                 stage("Create installer") {
                     bat """
