@@ -1,9 +1,9 @@
-import { netHandler } from '../src/app/net-handler';
+import { connectC9Pipe } from '../src/app/c9-pipe-handler';
 import { createConnection } from 'net';
 
 jest.mock('net');
 
-describe('net handler', () => {
+describe('C9 pipe handler', () => {
   const webContentsMocked = { send: jest.fn() };
   const mockConnectionEvents = new Map<String, any>();
   const mockCreateConnection = (createConnection as unknown) as jest.MockInstance<
@@ -18,38 +18,25 @@ describe('net handler', () => {
         on: (event, callback) => {
           mockConnectionEvents.set(event, callback);
         },
+        destroy: jest.fn(),
       };
     });
   });
 
   describe('connect', () => {
-    it('disallowed', () => {
-      expect(() => {
-        netHandler.connect(webContentsMocked as any, '/some/thing');
-      }).toThrow();
-    });
-
     it('success', () => {
-      const connection = netHandler.connect(
-        webContentsMocked as any,
-        '\\\\?\\pipe\\symphony-1-1',
-      );
-      expect(connection).toBeTruthy();
+      connectC9Pipe(webContentsMocked as any, 'symphony-c9-test');
       expect(webContentsMocked.send).toHaveBeenCalledWith(
-        'net-event',
+        'c9-pipe-event',
         expect.objectContaining({ event: 'connected' }),
       );
     });
 
     it('data', () => {
-      const connection = netHandler.connect(
-        webContentsMocked as any,
-        '\\\\?\\pipe\\symphony-1-1',
-      );
-      expect(connection).toBeTruthy();
+      connectC9Pipe(webContentsMocked as any, 'symphony-c9-test');
       mockConnectionEvents.get('data')('the data');
       expect(webContentsMocked.send).toHaveBeenCalledWith(
-        'net-event',
+        'c9-pipe-event',
         expect.objectContaining({ event: 'data', arg: 'the data' }),
       );
     });

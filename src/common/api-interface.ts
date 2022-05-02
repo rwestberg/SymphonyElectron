@@ -66,9 +66,9 @@ export enum apiCmds {
   getNativeWindowHandle = 'get-native-window-handle',
   getCitrixMediaRedirectionStatus = 'get-citrix-media-redirection-status',
   getSources = 'getSources',
-  createNetConnection = 'create-net-connection',
-  sendNetData = 'send-net-data',
-  closeNetConnection = 'close-net-connection',
+  connectCloud9Pipe = 'connect-cloud9-pipe',
+  writeCloud9Pipe = 'write-cloud9-pipe',
+  closeCloud9Pipe = 'close-cloud9-pipe',
   sendCloud9Command = 'send-cloud9-command',
   setCloud9MessageCallback = 'set-cloud9-message-callback',
 }
@@ -121,7 +121,7 @@ export interface IApiArgs {
   swiftSearchData: any;
   types: string[];
   thumbnailSize: Size;
-  connection: string;
+  pipe: string;
   data: Uint8Array;
   c9Command: object;
 }
@@ -277,7 +277,7 @@ export type NotificationActionCallback = (
   data: INotificationData,
 ) => void;
 
-export interface INetConnection {
+export interface ICloud9Pipe {
   write(data: Uint8Array): void;
   close(): void;
 }

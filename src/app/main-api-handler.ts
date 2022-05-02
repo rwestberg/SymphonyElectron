@@ -18,6 +18,7 @@ import { logger } from '../common/logger';
 import { activityDetection } from './activity-detection';
 import { analytics } from './analytics-handler';
 import appStateHandler from './app-state-handler';
+import { closeC9Pipe, connectC9Pipe, writeC9Pipe } from './c9-pipe-handler';
 import {
   IShellCommand,
   sendC9ShellCommand,
@@ -28,7 +29,6 @@ import { CloudConfigDataTypes, config, ICloudConfig } from './config-handler';
 import { downloadHandler } from './download-handler';
 import { mainEvents } from './main-event-handler';
 import { memoryMonitor } from './memory-monitor';
-import { netHandler } from './net-handler';
 import notificationHelper from './notifications/notification-helper';
 import { protocolHandler } from './protocol-handler';
 import { finalizeLogExports, registerLogRetriever } from './reports-handler';
@@ -392,6 +392,21 @@ ipcMain.on(
           swiftSearchInstance.handleMessageEvents(arg.swiftSearchData);
         }
         break;
+      case apiCmds.connectCloud9Pipe:
+        connectC9Pipe(event.sender, arg.pipe);
+        break;
+      case apiCmds.writeCloud9Pipe:
+        writeC9Pipe(arg.data);
+        break;
+      case apiCmds.closeCloud9Pipe:
+        closeC9Pipe();
+        break;
+      case apiCmds.sendCloud9Command:
+        sendC9ShellCommand(arg.c9Command as IShellCommand);
+        break;
+      case apiCmds.setCloud9MessageCallback:
+        setC9ShellMessageCallback(event.sender);
+        break;
       default:
         break;
     }
@@ -470,20 +485,6 @@ ipcMain.handle(
         break;
       case apiCmds.getCitrixMediaRedirectionStatus:
         return getCitrixMediaRedirectionStatus();
-      case apiCmds.createNetConnection:
-        return netHandler.connect(event.sender, arg.path);
-      case apiCmds.sendNetData:
-        netHandler.write(arg.connection, arg.data);
-        break;
-      case apiCmds.closeNetConnection:
-        netHandler.close(arg.connection);
-        break;
-      case apiCmds.sendCloud9Command:
-        sendC9ShellCommand(arg.c9Command as IShellCommand);
-        break;
-      case apiCmds.setCloud9MessageCallback:
-        setC9ShellMessageCallback(event.sender);
-        break;
       default:
         break;
     }

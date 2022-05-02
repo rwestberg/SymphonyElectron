@@ -32,6 +32,7 @@ import { notification } from '../renderer/notification';
 import { cleanAppCacheOnCrash } from './app-cache-handler';
 import { AppMenu } from './app-menu';
 import { monitorC9ExtensionLoading } from './c9-extension-handler';
+import { closeC9Pipe } from './c9-pipe-handler';
 import { hideC9Shell, loadC9Shell } from './c9-shell-handler';
 import { handleChildWindow } from './child-window-handler';
 import {
@@ -42,7 +43,6 @@ import {
 } from './config-handler';
 import crashHandler from './crash-handler';
 import { mainEvents } from './main-event-handler';
-import { netHandler } from './net-handler';
 import { exportLogs } from './reports-handler';
 import { SpellChecker } from './spell-check-handler';
 import { checkIfBuildExpired } from './ttl-handler';
@@ -474,8 +474,8 @@ export class WindowHandler {
       // reset to false when the client reloads
       this.isMana = false;
       logger.info(`window-handler: main window web contents finished loading!`);
-      // Ensure there are no lingering network connections from a previous session
-      netHandler.closeAll();
+      // Make sure there is no lingering C9 pipe connection
+      closeC9Pipe();
       // Make sure there is no lingering overlapping C9 window
       hideC9Shell();
       // early exit if the window has already been destroyed

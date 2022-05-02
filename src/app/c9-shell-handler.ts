@@ -40,7 +40,7 @@ class C9ShellHandler {
 
   constructor(hwnd: number) {
     this._browserHwnd = hwnd;
-    this._pipeName = 'symphony-' + getGuid();
+    this._pipeName = 'symphony-c9-' + getGuid();
     this._c9shell = this._launchC9Shell();
   }
 
@@ -60,7 +60,7 @@ class C9ShellHandler {
       this._clientHwnd = 0;
       this._isPoppedOut = false;
       this._pipeServerAvailable = false;
-      this._pipeName = 'symphony-' + getGuid();
+      this._pipeName = 'symphony-c9-' + getGuid();
       this._c9shell = this._launchC9Shell();
     }
   }
@@ -271,10 +271,16 @@ class C9ShellHandler {
             logger.warn('c9-shell: shell hWnd is 0?');
           }
         }
-        const pipeMatch = line.match(/C9SHELLSYMPHONYPIPE/);
-        if (pipeMatch) {
+        const pipeAvailableMatch = line.match(/C9SHELLSYMPHONYPIPEAVAILABLE/);
+        if (pipeAvailableMatch) {
           logger.info('c9-shell: pipe server is now available');
           this._pipeServerAvailable = true;
+          this._sendStatus();
+        }
+        const pipeClosedMatch = line.match(/C9SHELLSYMPHONYPIPECLOSED/);
+        if (pipeClosedMatch) {
+          logger.info('c9-shell: pipe server is now closed');
+          this._pipeServerAvailable = false;
           this._sendStatus();
         }
         const popoutMatch = line.match(/C9SHELLPOPOUT/);
@@ -305,9 +311,7 @@ class C9ShellHandler {
     this._sendMessage({
       message: this._isPoppedOut ? 'popped-out' : 'hosted',
       data: {
-        pipeName: this._pipeServerAvailable
-          ? '\\\\?\\pipe\\' + this._pipeName
-          : undefined,
+        pipeName: this._pipeServerAvailable ? this._pipeName : undefined,
         shellTitle: this._shellTitle,
       },
     });
