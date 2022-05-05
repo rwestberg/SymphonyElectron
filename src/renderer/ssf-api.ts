@@ -783,13 +783,13 @@ export class SSFApi {
             case 'connected':
               const ret = {
                 write: (data: Uint8Array) => {
-                  ipcRenderer.invoke(apiName.symphonyApi, {
+                  ipcRenderer.send(apiName.symphonyApi, {
                     cmd: apiCmds.writeCloud9Pipe,
                     data,
                   });
                 },
                 close: () => {
-                  ipcRenderer.invoke(apiName.symphonyApi, {
+                  ipcRenderer.send(apiName.symphonyApi, {
                     cmd: apiCmds.closeCloud9Pipe,
                   });
                 },
