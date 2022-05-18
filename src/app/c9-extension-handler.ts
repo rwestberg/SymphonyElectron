@@ -161,7 +161,7 @@ class C9ExtensionHandler {
   private async _insertExtension(extensions: string): Promise<string> {
     const extensionsParsed = JSON.parse(extensions);
     const existing = extensionsParsed.findIndex(
-      (extension) => extension.id === '@symphony/c9-integration',
+      (extension) => extension.id === '@symphony/symphony-c9',
     );
     if (existing >= 0) {
       const installed = extensionsParsed[existing];
@@ -182,7 +182,7 @@ class C9ExtensionHandler {
     const requestId = randomBytes(32).toString('hex');
     extensionsParsed.push({
       name: 'C9 Integration',
-      id: '@symphony/c9-integration',
+      id: '@symphony/symphony-c9',
       libVersion: '1',
       version: '1.0.0-injected',
       active: true,

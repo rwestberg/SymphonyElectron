@@ -23,13 +23,13 @@ node(params.JENKINS_NODE_LABEL) {
     try {
         stage("Fetch C9-SY-extension") {
             artifactory.download(
-                name:   "services/c9-integration",
-                file:   "c9-integration-${params.C9_INTEGRATION_VERSION}.tgz",
+                name:   "services/symphony-c9",
+                file:   "symphony-c9-${params.C9_INTEGRATION_VERSION}.tgz",
                 target: "download/"
             )
         }
         stage("Unpack C9-SY-extension") {
-            sh "tar -C download -xzvf download/c9-integration-*.tgz"
+            sh "tar -C download -xzvf download/symphony-c9-*.tgz"
         }
         stage("Fetch C9 Trader installer") {
             sh "curl -L '${params.C9_TRADER_INSTALLER}' -o download/C9Installer.msi"
@@ -40,7 +40,7 @@ node(params.JENKINS_NODE_LABEL) {
         }
         stage("Move dependencies into place") {
             sh "mkdir -p dist/win-unpacked/cloud9/integration dist/win-unpacked/cloud9/shell"
-            sh "mv download/c9-integration-*/extension.js dist/win-unpacked/cloud9/integration/"
+            sh "mv download/symphony.c9-*/extension.js dist/win-unpacked/cloud9/integration/"
             sh "mv download/C9Installer/ProgramFilesPath/Cloud9\\ Technologies\\ LLC/C9Trader/* dist/win-unpacked/cloud9/shell/"
             sh "rm -rf dist/win-unpacked/cloud9/shell/x86"
             bat "del /s /q dist\\win-unpacked\\cloud9\\shell\\*.pdb"
