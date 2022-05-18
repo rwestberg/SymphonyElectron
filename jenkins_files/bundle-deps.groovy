@@ -40,7 +40,7 @@ node(params.JENKINS_NODE_LABEL) {
         }
         stage("Move dependencies into place") {
             sh "mkdir -p dist/win-unpacked/cloud9/integration dist/win-unpacked/cloud9/shell"
-            sh "mv download/symphony.c9-*/extension.js dist/win-unpacked/cloud9/integration/"
+            sh "mv download/symphony-c9-*/extension.js dist/win-unpacked/cloud9/integration/"
             sh "mv download/C9Installer/ProgramFilesPath/Cloud9\\ Technologies\\ LLC/C9Trader/* dist/win-unpacked/cloud9/shell/"
             sh "rm -rf dist/win-unpacked/cloud9/shell/x86"
             bat "del /s /q dist\\win-unpacked\\cloud9\\shell\\*.pdb"
