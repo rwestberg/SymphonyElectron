@@ -5,8 +5,8 @@
 properties([
     parameters(withRunConfig([
         string(name: "JENKINS_NODE_LABEL", defaultValue: "syc9-test-win", description: "Label for the jenkins node which the job will run on"),
-        string(name: "SDA_C9_DEPS", defaultValue: "https://jenkins.rtc.dev.symphony.com/job/SFE%20-%20Cloud9%20Integration/job/SDA%20Bundle%20Dependencies/lastSuccessfulBuild/artifact/syc9-sda-deps.zip", description: "The C9 dependencies bundle to add to the installer."),
-        string(name: "SDA_LIBS", defaultValue: "https://jenkins.rtc.dev.symphony.com/job/SFE%20-%20Cloud9%20Integration/job/SDA%20Bundle%20Libraries/lastSuccessfulBuild/artifact/syc9-sda-libraries.zip", description: "The SDA library bundle to add to the installer."),
+        string(name: "SDA_C9_DEPS", defaultValue: "https://jenkins.rtc.dev.symphony.com/job/SFE_Cloud9_Integration/job/SDA%20Bundle%20Dependencies/lastSuccessfulBuild/artifact/syc9-sda-deps.zip", description: "The C9 dependencies bundle to add to the installer."),
+        string(name: "SDA_LIBS", defaultValue: "https://jenkins.rtc.dev.symphony.com/job/SFE_Cloud9_Integration/job/SDA%20Bundle%20Libraries/lastSuccessfulBuild/artifact/syc9-sda-libraries.zip", description: "The SDA library bundle to add to the installer."),
     ])),
 
     buildDiscarder(logRotator(artifactNumToKeepStr: '15', numToKeepStr: '15'))
