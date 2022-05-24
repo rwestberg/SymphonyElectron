@@ -85,26 +85,17 @@ const saveWindowSettings = async (): Promise<void> => {
   }
 };
 
-const windowMaximized = async (): Promise<void> => {
-  const browserWindow = BrowserWindow.getFocusedWindow() as ICustomBrowserWindow;
-  if (browserWindow && windowExists(browserWindow)) {
-    const isMaximized = browserWindow.isMaximized();
-    const isFullScreen = browserWindow.isFullScreen();
-    if (browserWindow.winName === apiName.mainWindowName) {
-      const { mainWinPos } = config.getUserConfigFields(['mainWinPos']);
-      await config.updateUserConfig({
-        mainWinPos: { ...mainWinPos, ...{ isMaximized, isFullScreen } },
-      });
-    }
-  }
-};
-
-const throttledWindowChanges = throttle(async (eventName) => {
+const throttledWindowChanges = throttle(async (eventName, window) => {
   await saveWindowSettings();
-  await windowMaximized();
   notification.moveNotificationToTop();
-  mainEvents.publish(eventName);
-}, 1000);
+  if (
+    window &&
+    (window as ICustomBrowserWindow).winName === apiName.mainWindowName
+  ) {
+    const isMaximized = window.isMaximized();
+    mainEvents.publish(eventName, isMaximized);
+  }
+}, 300);
 
 const throttledWindowRestore = throttle(async () => {
   notification.moveNotificationToTop();
@@ -304,18 +295,18 @@ export const monitorWindowActions = (window: BrowserWindow): void => {
   eventNames.forEach((event: string) => {
     if (window) {
       // @ts-ignore
-      window.on(event, () => throttledWindowChanges(event));
+      window.on(event, () => throttledWindowChanges(event, window));
     }
   });
   window.on('enter-full-screen', () =>
-    throttledWindowChanges('enter-full-screen'),
+    throttledWindowChanges('enter-full-screen', window),
   );
-  window.on('maximize', () => throttledWindowChanges('maximize'));
+  window.on('maximize', () => throttledWindowChanges('maximize', window));
 
   window.on('leave-full-screen', () =>
-    throttledWindowChanges('leave-full-screen'),
+    throttledWindowChanges('leave-full-screen', window),
   );
-  window.on('unmaximize', () => throttledWindowChanges('unmaximize'));
+  window.on('unmaximize', () => throttledWindowChanges('unmaximize', window));
 
   if ((window as ICustomBrowserWindow).winName === apiName.mainWindowName) {
     window.on('restore', throttledWindowRestore);

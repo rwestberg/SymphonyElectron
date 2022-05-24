@@ -678,11 +678,9 @@ export class WindowHandler {
     });
 
     // Certificate verification proxy
-    if (!isDevEnv) {
-      this.mainWebContents.session.setCertificateVerifyProc(
-        handleCertificateProxyVerification,
-      );
-    }
+    this.mainWebContents.session.setCertificateVerifyProc(
+      handleCertificateProxyVerification,
+    );
 
     app.on('browser-window-focus', () => {
       this.registerGlobalShortcuts();
@@ -1460,10 +1458,17 @@ export class WindowHandler {
 
         this.execCmd(this.screenShareIndicatorFrameUtil, []);
         const timeoutValue = 300;
-        setTimeout(
-          () => this.drawScreenShareIndicatorFrame(source),
-          timeoutValue,
-        );
+        setTimeout(() => {
+          this.drawScreenShareIndicatorFrame(source);
+          if (isMac) {
+            const windows = BrowserWindow.getAllWindows();
+            windows.map((window: BrowserWindow) => {
+              if (window.getMediaSourceId() === source.id) {
+                window.show();
+              }
+            });
+          }
+        }, timeoutValue);
       }
     };
 
@@ -1484,20 +1489,19 @@ export class WindowHandler {
         // SDA-3646 hack for macOS: whenever we try to close the penultimate window (here screensharing screen picker), Electron activates the last Electron window
         // This behaviour was observed while trying to upgrade from Electron 14 to Electron 17
         // Here the hack to solve that issue is to create a new invisible BrowserWindow.
-        if (isMac) {
-          this.screenPickerPlaceholderWindow = new BrowserWindow({
-            width: 0,
-            height: 0,
-            transparent: true,
-            frame: false,
-            x: 0,
-            y: 0,
-            resizable: false,
-            movable: false,
-            fullscreenable: false,
-          });
-          this.screenPickerPlaceholderWindow.show();
-        }
+        this.screenPickerPlaceholderWindow = new BrowserWindow({
+          title: 'Screen sharing - Symphony',
+          width: 0,
+          height: 0,
+          transparent: true,
+          frame: false,
+          x: 0,
+          y: 0,
+          resizable: false,
+          movable: false,
+          fullscreenable: false,
+        });
+        this.screenPickerPlaceholderWindow.show();
       }
 
       window.send('start-share' + id, source);
@@ -1510,6 +1514,15 @@ export class WindowHandler {
       ipcMain.removeListener('screen-source-select', screenSourceSelect);
       this.removeWindow(opts.winKey);
       this.screenPickerWindow = null;
+      if (isWindowsOS) {
+        if (
+          this.screenPickerPlaceholderWindow &&
+          windowExists(this.screenPickerPlaceholderWindow)
+        ) {
+          this.screenPickerPlaceholderWindow.close();
+          this.screenPickerPlaceholderWindow = null;
+        }
+      }
     });
   }
 
@@ -1716,6 +1729,7 @@ export class WindowHandler {
           frame: false,
           focusable: true,
           transparent: true,
+          skipTaskbar: true,
           autoHideMenuBar: true,
           resizable: false,
           alwaysOnTop: true,
@@ -1838,6 +1852,7 @@ export class WindowHandler {
         height: frameHeight,
         frame: false,
         transparent: false,
+        skipTaskbar: true,
         alwaysOnTop: true,
       },
       {
