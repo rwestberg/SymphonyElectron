@@ -33,7 +33,6 @@ import { cleanAppCacheOnCrash } from './app-cache-handler';
 import { AppMenu } from './app-menu';
 import { monitorC9ExtensionLoading } from './c9-extension-handler';
 import { closeC9Pipe } from './c9-pipe-handler';
-import { hideC9Shell, loadC9Shell } from './c9-shell-handler';
 import { handleChildWindow } from './child-window-handler';
 import {
   CloudConfigDataTypes,
@@ -476,8 +475,6 @@ export class WindowHandler {
       logger.info(`window-handler: main window web contents finished loading!`);
       // Make sure there is no lingering C9 pipe connection
       closeC9Pipe();
-      // Make sure there is no lingering overlapping C9 window
-      hideC9Shell();
       // early exit if the window has already been destroyed
       if (!this.mainWebContents || this.mainWebContents.isDestroyed()) {
         logger.info(
@@ -711,9 +708,6 @@ export class WindowHandler {
     if (this.config.enableRendererLogs) {
       this.mainWebContents.on('console-message', onConsoleMessages);
     }
-
-    // Load the Cloud9 shell application inside this window
-    loadC9Shell(this.mainWindow.getNativeWindowHandle());
 
     return this.mainWindow;
   }

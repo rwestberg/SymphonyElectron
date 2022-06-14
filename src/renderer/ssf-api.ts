@@ -826,22 +826,12 @@ export class SSFApi {
   }
 
   /**
-   * Sends a command to the Cloud9 client.
+   * Launches the Cloud9 client.
    */
-  public sendCloud9Command(command: object): void {
-    ipcRenderer.send(apiName.symphonyApi, {
-      cmd: apiCmds.sendCloud9Command,
-      c9Command: command,
-    });
-  }
-
-  /**
-   * Register a callback for Cloud9 client messages.
-   */
-  public setCloud9MessageCallback(callback: (status: string) => void): void {
+  public launchCloud9(callback: (status: string) => void): void {
     local.c9MessageCallback = callback;
     ipcRenderer.send(apiName.symphonyApi, {
-      cmd: apiCmds.setCloud9MessageCallback,
+      cmd: apiCmds.launchCloud9,
     });
   }
 }
@@ -1084,8 +1074,8 @@ local.ipcRenderer.on('c9-pipe-event', (_event, args) => {
 /**
  * An event triggered by the main process when the status of the cloud9 client changes
  */
-local.ipcRenderer.on('c9-message-event', (_event, args) => {
-  local.c9MessageCallback?.call(null, args?.message);
+local.ipcRenderer.on('c9-status-event', (_event, args) => {
+  local.c9MessageCallback?.call(null, args?.status);
 });
 
 // Invoked whenever the app is reloaded/navigated

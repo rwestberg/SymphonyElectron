@@ -91,9 +91,8 @@ if (ssfWindow.ssf) {
     getNativeWindowHandle: ssfWindow.ssf.getNativeWindowHandle,
     getCitrixMediaRedirectionStatus:
       ssfWindow.ssf.getCitrixMediaRedirectionStatus,
+    launchCloud9: ssfWindow.ssf.launchCloud9,
     connectCloud9Pipe: ssfWindow.ssf.connectCloud9Pipe,
-    sendCloud9Command: ssfWindow.ssf.sendCloud9Command,
-    setCloud9MessageCallback: ssfWindow.ssf.setCloud9MessageCallback,
   });
 }
 

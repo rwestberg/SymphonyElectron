@@ -66,11 +66,10 @@ export enum apiCmds {
   getNativeWindowHandle = 'get-native-window-handle',
   getCitrixMediaRedirectionStatus = 'get-citrix-media-redirection-status',
   getSources = 'getSources',
+  launchCloud9 = 'launch-cloud9',
   connectCloud9Pipe = 'connect-cloud9-pipe',
   writeCloud9Pipe = 'write-cloud9-pipe',
   closeCloud9Pipe = 'close-cloud9-pipe',
-  sendCloud9Command = 'send-cloud9-command',
-  setCloud9MessageCallback = 'set-cloud9-message-callback',
 }
 
 export enum apiName {
