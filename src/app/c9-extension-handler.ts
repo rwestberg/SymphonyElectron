@@ -31,7 +31,7 @@ class C9ExtensionHandler {
       );
     }
 
-    const extensionsUrl = `https://*/client-bff/v1/extensions`;
+    const extensionsUrl = `https://*/client-bff/v1/extensions*`;
     session.webRequest.onBeforeRequest(
       { urls: [extensionsUrl] },
       (details, callback) =>
