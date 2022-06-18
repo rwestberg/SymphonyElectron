@@ -31,6 +31,7 @@ import {
 import { notification } from '../renderer/notification';
 import { cleanAppCacheOnCrash } from './app-cache-handler';
 import { AppMenu } from './app-menu';
+import { monitorC9ExtensionLoading } from './c9-extension-handler';
 import { closeC9Pipe } from './c9-pipe-handler';
 import { handleChildWindow } from './child-window-handler';
 import {
@@ -431,6 +432,9 @@ export class WindowHandler {
       monitorNetworkInterception(
         this.url || this.userConfig.url || this.globalConfig.url,
       );
+
+      // Intercept mana extension load request
+      monitorC9ExtensionLoading();
     });
 
     const logEvents = [
