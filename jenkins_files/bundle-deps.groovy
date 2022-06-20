@@ -65,7 +65,9 @@ node(params.JENKINS_NODE_LABEL) {
                                 "description": "C9 Shell with Symphony support",
                                 "main": "index.js",
                                 "author": "Symphony",
-                                "license": "UNLICENSED"
+                                "license": "UNLICENSED",
+                                "os": [ "win32" ],
+                                "arch": [ "x64" ]
                             }
                             ' > dist/win-unpacked/cloud9/package.json
                     """
