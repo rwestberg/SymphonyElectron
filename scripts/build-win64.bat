@@ -82,14 +82,19 @@ mkdir targets
 set targetsDir="%CD%\targets\"
 
 IF "%EXPIRY_PERIOD%"=="0" (
-    set archiveName=Symphony-Win64-%SYMVER%-%PARENT_BUILD_VERSION%
+    set archiveName=Symphony-C9-Win64-%SYMVER%-%PARENT_BUILD_VERSION%
 ) else (
-    set archiveName=Symphony-Win64-%SYMVER%-%PARENT_BUILD_VERSION%-TTL-%EXPIRY_PERIOD%
+    set archiveName=Symphony-C9-Win64-%SYMVER%-%PARENT_BUILD_VERSION%-TTL-%EXPIRY_PERIOD%
 )
 
 set installerDir="%CD%\installer\win"
 set distDir="%CD%\dist"
 set rootDir="%CD%"
+
+echo "Move optional symphony-c9-shell files into place: " "%distDir%\win-unpacked\cloud9"
+mkdir "%distDir%\win-unpacked\cloud9"
+move /y "%rootDir%\node_modules\@symphony\symphony-c9-shell\shell" "%distDir%\win-unpacked\cloud9"
+move /y "%rootDir%\node_modules\@symphony\symphony-c9-shell\integration" "%distDir%\win-unpacked\cloud9"
 
 if NOT EXIST "%PFX_DIR%\%PFX_FILE%" (
   echo "can not find .pfx file" "%pfxDir%\%pfxFile%"

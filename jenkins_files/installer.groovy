@@ -33,12 +33,12 @@ node(params.JENKINS_NODE_LABEL) {
                         call npm run unpacked-win
                     """
                 }
-                stage("Fetch C9 dependencies") {
-                    sh "mkdir -p download"
-                    sh "curl -L '${params.SDA_C9_DEPS}' -o download/syc9-sda-deps.zip"
-                }
-                stage("Extract C9 dependencies") {
-                    bat "powershell Expand-Archive download\\syc9-sda-deps.zip dist\\win-unpacked"
+                stage("Move optional symphony-c9-shell files into place") {
+                    bat """
+                        mkdir "dist\\win-unpacked\\cloud9"
+                        move /y "node_modules\\@symphony\\symphony-c9-shell\\shell" "dist\\win-unpacked\\cloud9"
+                        move /y "node_modules\\@symphony\\symphony-c9-shell\\integration" "dist\\win-unpacked\\cloud9"
+                    """
                 }
                 stage("Fetch SDA libraries") {
                     sh "curl -L '${params.SDA_LIBS}' -o download/syc9-sda-libraries.zip"

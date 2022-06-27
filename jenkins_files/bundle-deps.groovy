@@ -50,12 +50,6 @@ node(params.JENKINS_NODE_LABEL) {
                     bat "del /s /q dist\\win-unpacked\\cloud9\\shell\\*.pdb"
                     bat "dir /s dist\\win-unpacked"
                 }
-                stage("Package dependencies") {
-                    bat "powershell Compress-Archive dist\\win-unpacked\\cloud9 syc9-sda-deps.zip"
-                }
-                stage("Publish dependencies artifact") {
-                    archiveArtifacts artifacts: 'syc9-sda-deps.zip', fingerprint: false
-                }
                 stage("Prepare NPM package structure") {
                     sh """
                         echo '

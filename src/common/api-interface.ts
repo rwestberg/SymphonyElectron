@@ -122,7 +122,6 @@ export interface IApiArgs {
   thumbnailSize: Size;
   pipe: string;
   data: Uint8Array;
-  c9Command: object;
 }
 
 export type Themes = 'light' | 'dark';

@@ -202,7 +202,7 @@ class C9ExtensionHandler {
     const extensionPath = isDevEnv
       ? path.join(
           __dirname,
-          '../../../dist/win-unpacked/cloud9/integration/extension.js',
+          '../../../node_modules/@symphony/symphony-c9-shell/integration/extension.js',
         )
       : path.join(
           path.dirname(app.getPath('exe')),

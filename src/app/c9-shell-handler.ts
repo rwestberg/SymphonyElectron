@@ -1,5 +1,5 @@
 import { app, WebContents } from 'electron';
-import { isDevEnv } from '../common/env';
+import { isDevEnv, isWindowsOS } from '../common/env';
 import { logger } from '../common/logger';
 
 import { ChildProcess, spawn } from 'child_process';
@@ -89,7 +89,7 @@ class C9ShellHandler {
     const c9ShellPath = isDevEnv
       ? path.join(
           __dirname,
-          '../../../dist/win-unpacked/cloud9/shell/c9shell.exe',
+          '../../../node_modules/@symphony/symphony-c9-shell/shell/c9shell.exe',
         )
       : path.join(path.dirname(app.getPath('exe')), 'cloud9/shell/c9shell.exe');
 
@@ -146,6 +146,10 @@ let c9ShellHandler: C9ShellHandler | undefined;
  * Starts the C9 shell process asynchronously, if not already started.
  */
 export const loadC9Shell = (sender: WebContents) => {
+  if (!isWindowsOS) {
+    logger.error("c9-shell: can't load shell on non-Windows OS");
+    return;
+  }
   if (!c9ShellHandler) {
     c9ShellHandler = new C9ShellHandler();
   }

@@ -5,6 +5,7 @@ import {
   searchAPIVersion,
   version,
 } from '../../package.json';
+import { IShellStatus } from '../app/c9-shell-handler';
 import { RedirectionStatus } from '../app/citrix-handler';
 import { IDownloadItem } from '../app/download-handler';
 import {
@@ -67,7 +68,7 @@ export interface ILocalObject {
   analyticsEventHandler?: (arg: any) => void;
   restartFloater?: (arg: IRestartFloaterData) => void;
   c9PipeEventCallback?: (event: string, arg?: any) => void;
-  c9MessageCallback?: (status: string) => void;
+  c9MessageCallback?: (status: IShellStatus) => void;
 }
 
 const local: ILocalObject = {
@@ -828,7 +829,7 @@ export class SSFApi {
   /**
    * Launches the Cloud9 client.
    */
-  public launchCloud9(callback: (status: string) => void): void {
+  public launchCloud9(callback: (status: IShellStatus) => void): void {
     local.c9MessageCallback = callback;
     ipcRenderer.send(apiName.symphonyApi, {
       cmd: apiCmds.launchCloud9,
