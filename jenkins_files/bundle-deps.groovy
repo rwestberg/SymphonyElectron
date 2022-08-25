@@ -67,7 +67,7 @@ node(params.JENKINS_NODE_LABEL) {
                     """
                 }
                 stage("Publish NPM package") {
-                    sh "npm publish dist/win-unpacked/cloud9"
+                    sh "NODE_OPTIONS=--max_old_space_size=8192 npm publish dist/win-unpacked/cloud9"
                 }
             } finally {
                 stage("Post Actions") {
