@@ -1,7 +1,7 @@
 #!/usr/bin/env groovy
 
 def withNvmVer(Closure body) {
-    withNvm("v12.13.1", "npmrcFile") {\
+    withNvm("v16.16.0", "npmrcFile") {\
         body()
     }
 }
