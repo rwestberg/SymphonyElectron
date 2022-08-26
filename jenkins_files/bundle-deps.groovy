@@ -70,6 +70,7 @@ node(params.JENKINS_NODE_LABEL) {
                     bat """
                         set NODE_OPTIONS=--max_old_space_size=8192
                         echo %%NODE_OPTIONS%%
+                        node -e 'console.log(v8.getHeapStatistics().heap_size_limit/(1024*1024))'
                         npm publish dist/win-unpacked/cloud9
                     """
                 }
