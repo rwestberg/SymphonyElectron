@@ -69,8 +69,7 @@ node(params.JENKINS_NODE_LABEL) {
                 stage("Publish NPM package") {
                     bat """
                         set NODE_OPTIONS=--max-old-space-size=2048
-                        echo %%NODE_OPTIONS%%
-                        node -e 'console.log(v8.getHeapStatistics().heap_size_limit/(1024*1024))'
+                        node -e 'console.log(v8.getHeapStatistics())'
                         npm publish dist/win-unpacked/cloud9
                     """
                 }
