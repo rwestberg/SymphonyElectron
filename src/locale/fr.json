@@ -31,6 +31,7 @@
   "Build expired": "Construit expiré",
   "Cancel": "Annuler",
   "Certificate Error": "Erreur de certificat",
+  "Check for updates": "Vérifier les mises à jour",
   "Clear cache and Reload": "Vider le cache et rafraîchir Symphony",
   "Close": "Fermer",
   "ContextMenu": {
@@ -184,6 +185,9 @@
   "Speech": "Dictée vocale",
   "Start Speaking": "Commencer à dicter",
   "Stop Speaking": "Arreter de dicter",
+  "Switch to client 1.5": "Passer au client 1.5",
+  "Switch to client 2.0": "Passer au client 2.0",
+  "Switch to client 2.0 daily": "Passer à client 2.0 daily",
   "Symphony Help": "Aide en ligne de Symphony",
   "Symphony Url": "https://symphony.com/fr-FR",
   "Title Bar Style": "Style de la barre de titre",

@@ -13,6 +13,7 @@ import {
   IApiArgs,
   INotificationData,
 } from '../common/api-interface';
+import { isMac } from '../common/env';
 import { i18n, LocaleType } from '../common/i18n';
 import { logger } from '../common/logger';
 import { activityDetection } from './activity-detection';
@@ -46,11 +47,13 @@ import {
   windowExists,
 } from './window-utils';
 
+import { autoUpdate } from './auto-update-handler';
+
 // Swift search API
 let swiftSearchInstance;
 try {
   // tslint:disable-next-line:no-var-requires
-  const { SSAPIBridge } = require('swift-search');
+  const { SSAPIBridge } = {} as any; // require('swift-search');
   swiftSearchInstance = new SSAPIBridge();
 } catch (e) {
   console.warn(
@@ -260,39 +263,7 @@ ipcMain.on(
         analytics.registerPreloadWindow(event.sender);
         break;
       case apiCmds.setCloudConfig:
-        const {
-          podLevelEntitlements,
-          acpFeatureLevelEntitlements,
-          pmpEntitlements,
-          ...rest
-        } = arg.cloudConfig as ICloudConfig;
-        if (
-          podLevelEntitlements &&
-          podLevelEntitlements.autoLaunchPath &&
-          podLevelEntitlements.autoLaunchPath.match(/\\\\/g)
-        ) {
-          podLevelEntitlements.autoLaunchPath = podLevelEntitlements.autoLaunchPath.replace(
-            /\\+/g,
-            '\\',
-          );
-        }
-        if (
-          podLevelEntitlements &&
-          podLevelEntitlements.userDataPath &&
-          podLevelEntitlements.userDataPath.match(/\\\\/g)
-        ) {
-          podLevelEntitlements.userDataPath = podLevelEntitlements.userDataPath.replace(
-            /\\+/g,
-            '\\',
-          );
-        }
-        logger.info('main-api-handler: ignored other values from SFE', rest);
-        await config.updateCloudConfig({
-          podLevelEntitlements,
-          acpFeatureLevelEntitlements,
-          pmpEntitlements,
-        });
-        await updateFeaturesForCloudConfig();
+        await updateFeaturesForCloudConfig(arg.cloudConfig as ICloudConfig);
         if (windowHandler.appMenu) {
           windowHandler.appMenu.buildMenu();
         }
@@ -330,9 +301,6 @@ ipcMain.on(
           }
         }
         break;
-      // case apiCmds.autoUpdate:
-      //   autoUpdate.update(arg.filename);
-      //   break;
       case apiCmds.aboutAppClipBoardData:
         if (arg.clipboard && arg.clipboardType) {
           clipboard.write(
@@ -365,9 +333,14 @@ ipcMain.on(
       case apiCmds.unmaximizeMainWindow:
         const mainWindow = windowHandler.getMainWindow();
         if (mainWindow && windowExists(mainWindow)) {
-          mainWindow.isFullScreen()
-            ? mainWindow.setFullScreen(false)
-            : mainWindow.unmaximize();
+          if (mainWindow.isFullScreen()) {
+            mainWindow.setFullScreen(false);
+          } else {
+            mainWindow.unmaximize();
+            setTimeout(() => {
+              windowHandler.forceUnmaximize();
+            }, 100);
+          }
         }
         // Give focus back to main webContents
         if (mainWebContents && !mainWebContents.isDestroyed()) {
@@ -376,6 +349,9 @@ ipcMain.on(
         break;
       case apiCmds.setPodUrl:
         await config.updateUserConfig({ url: arg.newPodUrl });
+        if (isMac) {
+          config.copyGlobalConfig();
+        }
         app.relaunch();
         app.exit();
         break;
@@ -401,6 +377,15 @@ ipcMain.on(
         break;
       case apiCmds.launchCloud9:
         loadC9Shell(event.sender);
+        break;
+      case apiCmds.updateAndRestart:
+        autoUpdate.updateAndRestart();
+        break;
+      case apiCmds.downloadUpdate:
+        autoUpdate.downloadUpdate();
+        break;
+      case apiCmds.checkForUpdates:
+        autoUpdate.checkUpdates();
         break;
       default:
         break;
@@ -463,13 +448,6 @@ ipcMain.handle(
           types,
           thumbnailSize,
         });
-      case apiCmds.isMisspelled:
-        if (typeof arg.word === 'string') {
-          return windowHandler.spellchecker
-            ? windowHandler.spellchecker.isMisspelled(arg.word)
-            : false;
-        }
-        break;
       case apiCmds.getNativeWindowHandle:
         const browserWin = getWindowByName(arg.windowName);
         if (browserWin && windowExists(browserWin)) {
@@ -541,15 +519,6 @@ const logApiCallParams = (arg: any) => {
       logger.info(
         `main-api-handler: - ${apiCmd} - Properties: ${JSON.stringify(
           openScreenPickerDetails,
-          null,
-          2,
-        )}`,
-      );
-      break;
-    case apiCmds.isMisspelled:
-      logger.verbose(
-        `main-api-handler: - ${apiCmd} - Properties: ${JSON.stringify(
-          arg,
           null,
           2,
         )}`,

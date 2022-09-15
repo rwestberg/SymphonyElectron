@@ -5,7 +5,7 @@ call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\Common7\Tool
 echo %PATH%
 
 set DISABLE_REBUILD=true
-set NODE_REQUIRED_VERSION=12.13.1
+set NODE_REQUIRED_VERSION=16.13.2
 set SNYK_ORG=sda
 set SNYK_PROJECT_NAME="Symphony Desktop Application"
 
@@ -32,6 +32,7 @@ if %ERRORLEVEL% NEQ 0 (
   echo "Snyk does not exist! Installing and setting it up"
   call npm i snyk -g
 )
+
 echo "Setting snyk org to %SNYK_ORG% and api token to %SNYK_API_TOKEN%"
 call snyk config set org=%SNYK_ORG%
 call snyk config set api=%SNYK_API_TOKEN%
@@ -45,6 +46,25 @@ echo D | xcopy /y "C:\jenkins\workspace\tronlibraries\library" "library"
 
 echo "Installing dependencies..."
 call npm install
+
+:: Signing screen snippet and screen share indicator
+
+if NOT EXIST %SIGNING_FILE_PATH% (
+    echo Signing failed, 'signing.bat' not found.
+    exit /b -1
+)
+
+call %SIGNING_FILE_PATH% node_modules\screen-share-indicator-frame\ScreenShareIndicatorFrame.exe
+IF %errorlevel% neq 0 (
+	echo "Signing failed"
+	exit /b -1
+)
+
+call %SIGNING_FILE_PATH% node_modules\screen-snippet\ScreenSnippet.exe
+IF %errorlevel% neq 0 (
+	echo "Signing failed"
+	exit /b -1
+)
 
 # Run Snyk Security Tests
 echo "Running snyk security tests"
@@ -106,42 +126,13 @@ copy /y "%PFX_DIR%\%PFX_FILE%" "%installerDir%\%PFX_FILE%"
 cd %installerDir%
 
 
-if NOT EXIST %SIGNING_FILE_PATH% (
-    echo Signing failed, 'signing.bat' not found.
-    exit /b -1
-)
-
-call %SIGNING_FILE_PATH% ..\..\dist\win-unpacked\resources\app.asar.unpacked\node_modules\spawn-rx\vendor\jobber\Jobber.exe
-IF %errorlevel% neq 0 (
-	echo "Signing failed"
-	exit /b -1
-)
-
-call %SIGNING_FILE_PATH% ..\..\dist\win-unpacked\resources\app.asar.unpacked\node_modules\screen-share-indicator-frame\ScreenShareIndicatorFrame.exe
-IF %errorlevel% neq 0 (
-	echo "Signing failed"
-	exit /b -1
-)
-
-call %SIGNING_FILE_PATH% ..\..\dist\win-unpacked\resources\app.asar.unpacked\node_modules\screen-snippet\ScreenSnippet.exe
-IF %errorlevel% neq 0 (
-	echo "Signing failed"
-	exit /b -1
-)
-
-@REM call %SIGNING_FILE_PATH% ..\..\dist\win-unpacked\resources\app.asar.unpacked\node_modules\auto-update\auto_update_service.exe
-@REM IF %errorlevel% neq 0 (
-@REM 	echo "Signing failed"
-@REM 	exit /b -1
-@REM )
-
-@REM call %SIGNING_FILE_PATH% ..\..\dist\win-unpacked\resources\app.asar.unpacked\node_modules\auto-update\auto_update_helper.exe
-@REM IF %errorlevel% neq 0 (
-@REM 	echo "Signing failed"
-@REM 	exit /b -1
-@REM )
-
 call %SIGNING_FILE_PATH% ..\..\dist\win-unpacked\Symphony.exe
+IF %errorlevel% neq 0 (
+	echo "Signing failed"
+	exit /b -1
+)
+
+call %SIGNING_FILE_PATH% ..\..\dist\Symphony-%SYMVER%-win.exe
 IF %errorlevel% neq 0 (
 	echo "Signing failed"
 	exit /b -1
@@ -164,6 +155,8 @@ IF %errorlevel% neq 0 (
 	echo "Signing failed"
 	exit /b -1
 )
+
+node ..\..\scripts\windows_update_checksum.js "..\..\dist\Symphony-%SYMVER%-win.exe" "..\..\dist\latest.yml"
 
 echo "Building new installer with Wix Sharp"
 call "BuildWixSharpInstaller.bat"

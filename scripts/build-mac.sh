@@ -4,7 +4,7 @@
 echo "Unlocking keychain"
 security -v unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_NAME"
 
-NODE_REQUIRED_VERSION=v12.13.1
+NODE_REQUIRED_VERSION=v16.13.2
 SNYK_ORG=sda
 SNYK_PROJECT_NAME="Symphony Desktop Application"
 
@@ -149,6 +149,9 @@ if ! [ -x "$(command -v markdown-pdf)" ]; then
   echo 'Markdown PDF does not exist! Installing it' >&2
   npm install -g markdown-pdf
 fi
+
+echo "Updating auto-update yml file"
+node scripts/macos_update_yml.js  "dist/latest-mac.yml"
 
 echo "Generating PDF for installation instructions"
 markdown-pdf installer/mac/install_instructions_mac.md

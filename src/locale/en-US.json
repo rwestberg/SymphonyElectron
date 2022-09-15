@@ -31,6 +31,7 @@
   "Build expired": "Build expired",
   "Cancel": "Cancel",
   "Certificate Error": "Certificate Error",
+  "Check for updates": "Check for updates",
   "Clear cache and Reload": "Clear cache and Reload",
   "Close": "Close",
   "ContextMenu": {
@@ -184,6 +185,9 @@
   "Speech": "Speech",
   "Start Speaking": "Start Speaking",
   "Stop Speaking": "Stop Speaking",
+  "Switch to client 1.5": "Switch to client 1.5",
+  "Switch to client 2.0": "Switch to client 2.0",
+  "Switch to client 2.0 daily": "Switch to client 2.0 daily",
   "Symphony Help": "Symphony Help",
   "Symphony Url": "https://symphony.com/en-US",
   "Title Bar Style": "Title Bar Style",
