@@ -20,12 +20,13 @@ import { apiName } from '../common/api-interface';
 import { isDevEnv, isLinux, isMac, isWindowsOS } from '../common/env';
 import { i18n, LocaleType } from '../common/i18n';
 import { logger } from '../common/logger';
-import { getGuid } from '../common/utils';
+import { getDifferenceInDays, getGuid, getRandomTime } from '../common/utils';
 import { whitelistHandler } from '../common/whitelist-handler';
-import { autoLaunchInstance } from './auto-launch-controller';
 import {
   CloudConfigDataTypes,
   config,
+  ConfigFieldsToRestart,
+  ICloudConfig,
   IConfig,
   ICustomRectangle,
 } from './config-handler';
@@ -34,6 +35,7 @@ import { memoryMonitor } from './memory-monitor';
 import { screenSnippet } from './screen-snippet-handler';
 import { updateAlwaysOnTop } from './window-actions';
 import {
+  AUX_CLICK,
   DEFAULT_HEIGHT,
   DEFAULT_WIDTH,
   ICustomBrowserView,
@@ -45,7 +47,10 @@ import {
 } from './window-handler';
 
 import { notification } from '../renderer/notification';
+import { autoLaunchInstance } from './auto-launch-controller';
+import { autoUpdate } from './auto-update-handler';
 import { mainEvents } from './main-event-handler';
+
 interface IStyles {
   name: styleNames;
   content: string;
@@ -63,6 +68,11 @@ const { ctWhitelist } = config.getConfigFields(['ctWhitelist']);
 // Network status check variables
 const networkStatusCheckInterval = 10 * 1000;
 let networkStatusCheckIntervalId;
+
+const MAX_AUTO_UPDATE_CHECK_INTERVAL = 4 * 60 * 60 * 1000; // 4hrs
+const MIN_AUTO_UPDATE_CHECK_INTERVAL = 2 * 60 * 60 * 1000; // 2hrs
+let autoUpdateIntervalId;
+
 let isNetworkMonitorInitialized = false;
 
 const styles: IStyles[] = [];
@@ -115,9 +125,9 @@ export const preventWindowNavigation = (
   );
 
   const listener = async (e: Electron.Event, winUrl: string) => {
-    if (!winUrl.startsWith('http' || 'https')) {
+    if (!winUrl.startsWith('https')) {
       logger.error(
-        `window-utils: ${winUrl} doesn't start with http or https, so, not navigating!`,
+        `window-utils: ${winUrl} doesn't start with https, so, not navigating!`,
       );
       e.preventDefault();
       return;
@@ -196,6 +206,7 @@ export const createComponentWindow = (
       nodeIntegration: IS_NODE_INTEGRATION_ENABLED,
       preload: path.join(__dirname, '../renderer/_preload-component.js'),
       devTools: isDevEnv,
+      disableBlinkFeatures: AUX_CLICK,
     },
   };
 
@@ -957,17 +968,78 @@ export const getWindowByName = (
   });
 };
 
-export const updateFeaturesForCloudConfig = async (): Promise<void> => {
+export const updateFeaturesForCloudConfig = async (
+  cloudConfig: ICloudConfig,
+): Promise<void> => {
+  const {
+    podLevelEntitlements,
+    acpFeatureLevelEntitlements,
+    pmpEntitlements,
+    ...rest
+  } = cloudConfig as ICloudConfig;
+  if (
+    podLevelEntitlements &&
+    podLevelEntitlements.autoLaunchPath &&
+    podLevelEntitlements.autoLaunchPath.match(/\\\\/g)
+  ) {
+    podLevelEntitlements.autoLaunchPath = podLevelEntitlements.autoLaunchPath.replace(
+      /\\+/g,
+      '\\',
+    );
+  }
+  if (
+    podLevelEntitlements &&
+    podLevelEntitlements.userDataPath &&
+    podLevelEntitlements.userDataPath.match(/\\\\/g)
+  ) {
+    podLevelEntitlements.userDataPath = podLevelEntitlements.userDataPath.replace(
+      /\\+/g,
+      '\\',
+    );
+  }
+
+  logger.info(
+    'window-utils: filtered SDA cloudConfig',
+    config.getMergedConfig(config.cloudConfig as ICloudConfig) as IConfig,
+  );
+  logger.info(
+    'window-utils: filtered SFE cloud config',
+    config.getMergedConfig({
+      podLevelEntitlements,
+      acpFeatureLevelEntitlements,
+      pmpEntitlements,
+    }) as IConfig,
+  );
+  const updatedCloudConfigFields = config.compareCloudConfig(
+    config.getMergedConfig(config.cloudConfig as ICloudConfig) as IConfig,
+    config.getMergedConfig({
+      podLevelEntitlements,
+      acpFeatureLevelEntitlements,
+      pmpEntitlements,
+    }) as IConfig,
+  );
+
+  logger.info('window-utils: ignored other values from SFE', rest);
+  await config.updateCloudConfig({
+    podLevelEntitlements,
+    acpFeatureLevelEntitlements,
+    pmpEntitlements,
+  });
+
   const {
     alwaysOnTop: isAlwaysOnTop,
     launchOnStartup,
     memoryRefresh,
     memoryThreshold,
+    isAutoUpdateEnabled,
+    autoUpdateCheckInterval,
   } = config.getConfigFields([
     'launchOnStartup',
     'alwaysOnTop',
     'memoryRefresh',
     'memoryThreshold',
+    'isAutoUpdateEnabled',
+    'autoUpdateCheckInterval',
   ]) as IConfig;
 
   const mainWebContents = windowHandler.getMainWebContents();
@@ -992,6 +1064,69 @@ export const updateFeaturesForCloudConfig = async (): Promise<void> => {
       );
       memoryMonitor.setMemoryThreshold(parseInt(memoryThreshold, 10));
       mainWebContents.send('initialize-memory-refresh');
+    }
+  }
+
+  logger.info(
+    `window-utils: Updated cloud config fields`,
+    updatedCloudConfigFields,
+  );
+  if (updatedCloudConfigFields && updatedCloudConfigFields.length) {
+    if (mainWebContents && !mainWebContents.isDestroyed()) {
+      const shouldRestart = updatedCloudConfigFields.some((field) =>
+        ConfigFieldsToRestart.has(field),
+      );
+      logger.info(
+        `window-utils: should restart for updated cloud config field?`,
+        shouldRestart,
+      );
+      if (shouldRestart) {
+        mainWebContents.send('display-client-banner', {
+          reason: 'cloudConfig',
+          action: 'restart',
+        });
+      }
+    }
+  }
+
+  // SDA auto updater
+  logger.info(`window-utils: initiate auto update?`, isAutoUpdateEnabled);
+  if (isAutoUpdateEnabled) {
+    if (!autoUpdateIntervalId) {
+      // randomised to avoid having all users getting SDA update at the same time
+      autoUpdateIntervalId = setInterval(async () => {
+        const { lastAutoUpdateCheckDate } = config.getUserConfigFields([
+          'lastAutoUpdateCheckDate',
+        ]);
+        if (!lastAutoUpdateCheckDate || lastAutoUpdateCheckDate === '') {
+          logger.info(
+            `window-utils: lastAutoUpdateCheckDate is not set in user config file so checking for updates`,
+            lastAutoUpdateCheckDate,
+            autoUpdateCheckInterval,
+          );
+          await config.updateUserConfig({
+            lastAutoUpdateCheckDate: new Date().toISOString(),
+          });
+          autoUpdate.checkUpdates();
+          return;
+        }
+        logger.info(
+          `window-utils: is last check date > auto update check interval?`,
+          lastAutoUpdateCheckDate,
+          autoUpdateCheckInterval,
+        );
+        // Compare the current date and user config last auto update checked date
+        // and if it is greater that autoUpdateCheckInterval we check for new updates
+        if (
+          getDifferenceInDays(new Date(), new Date(lastAutoUpdateCheckDate)) >
+          Number(autoUpdateCheckInterval)
+        ) {
+          await config.updateUserConfig({
+            lastAutoUpdateCheckDate: new Date().toISOString(),
+          });
+          autoUpdate.checkUpdates();
+        }
+      }, getRandomTime(MIN_AUTO_UPDATE_CHECK_INTERVAL, MAX_AUTO_UPDATE_CHECK_INTERVAL));
     }
   }
 };
@@ -1055,6 +1190,7 @@ export const loadBrowserViews = async (
       nodeIntegration: IS_NODE_INTEGRATION_ENABLED,
       preload: path.join(__dirname, '../renderer/_preload-component.js'),
       devTools: isDevEnv,
+      disableBlinkFeatures: AUX_CLICK,
     },
   }) as ICustomBrowserView;
   const mainWindowBounds = windowHandler.getMainWindow()?.getBounds();
@@ -1130,25 +1266,33 @@ export const loadBrowserViews = async (
       ) {
         return;
       }
-      mainWindow.addBrowserView(titleBarView);
-      const winBounds: Rectangle = mainWindow.getBounds();
-      const currentScreenBounds: Rectangle = screen.getDisplayMatching({
-        ...winBounds,
-      }).workArea;
-      titleBarView.setBounds({
-        width: currentScreenBounds.width,
-        height: TITLE_BAR_HEIGHT,
-        x: 0,
-        y: 0,
-      });
-      if (!mainView || !viewExists(mainView)) {
-        return;
+      let width: number;
+      let height: number;
+      if (mainWindow.isMaximized()) {
+        const winBounds: Rectangle = mainWindow.getBounds();
+        const currentScreenBounds: Rectangle = screen.getDisplayMatching({
+          ...winBounds,
+        }).workArea;
+        width = currentScreenBounds.width;
+        height = currentScreenBounds.height;
+      } else {
+        [width, height] = mainWindow.getSize();
       }
+      mainWindow.addBrowserView(titleBarView);
+      const titleBarViewBounds = titleBarView.getBounds();
+      titleBarView.setBounds({
+        ...titleBarViewBounds,
+        ...{
+          width,
+        },
+      });
+      const mainViewBounds = mainView.getBounds();
       mainView.setBounds({
-        width: currentScreenBounds.width,
-        height: currentScreenBounds.height - TITLE_BAR_HEIGHT,
-        x: 0,
-        y: TITLE_BAR_HEIGHT,
+        ...mainViewBounds,
+        ...{
+          y: TITLE_BAR_HEIGHT,
+          height: height - TITLE_BAR_HEIGHT,
+        },
       });
       // Workaround as electron does not resize devtools automatically
       if (mainView.webContents.isDevToolsOpened()) {
@@ -1229,35 +1373,12 @@ export const loadBrowserViews = async (
     y: TITLE_BAR_HEIGHT,
   });
   mainView.setAutoResize({
-    horizontal: true,
-    vertical: false,
     width: true,
-    height: false,
-  });
-
-  // Workaround to fix the auto resize of the main view container height
-  mainWindow.on('resize', () => {
-    if (
-      !mainView ||
-      mainView.webContents.isDestroyed() ||
-      !mainWindow ||
-      !windowExists(mainWindow)
-    ) {
-      return;
-    }
-    const bounds = mainView.getBounds();
-    const [, height] = mainWindow.getSize();
-    mainView.setBounds({
-      ...bounds,
-      ...{
-        y: mainWindow.isFullScreen() ? 0 : TITLE_BAR_HEIGHT,
-        height: mainWindow.isFullScreen() ? height : height - TITLE_BAR_HEIGHT,
-      },
-    });
+    height: true,
   });
 
   windowHandler.setMainView(mainView);
-  windowHandler.setTitleBarView(mainView);
+  windowHandler.setTitleBarView(titleBarView);
 
   return mainView.webContents;
 };

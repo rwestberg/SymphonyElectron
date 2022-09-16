@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer, webFrame } from 'electron';
+import { contextBridge, ipcRenderer } from 'electron';
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import { apiCmds, apiName } from '../common/api-interface';
@@ -91,8 +91,12 @@ if (ssfWindow.ssf) {
     getNativeWindowHandle: ssfWindow.ssf.getNativeWindowHandle,
     getCitrixMediaRedirectionStatus:
       ssfWindow.ssf.getCitrixMediaRedirectionStatus,
+    registerClientBanner: ssfWindow.ssf.registerClientBanner,
     launchCloud9: ssfWindow.ssf.launchCloud9,
     connectCloud9Pipe: ssfWindow.ssf.connectCloud9Pipe,
+    updateAndRestart: ssfWindow.ssf.updateAndRestart,
+    downloadUpdate: ssfWindow.ssf.downloadUpdate,
+    checkForUpdates: ssfWindow.ssf.checkForUpdates,
   });
 }
 
@@ -131,22 +135,6 @@ const monitorMemory = (time) => {
 // When the window is completely loaded
 ipcRenderer.on('page-load', (_event, { locale, resources }) => {
   i18n.setResource(locale, resources);
-
-  webFrame.setSpellCheckProvider('en-US', {
-    async spellCheck(words, callback) {
-      const misspelled = await Promise.all(
-        words.map(async (word) => {
-          return (await ipcRenderer.invoke(apiName.symphonyApi, {
-            cmd: apiCmds.isMisspelled,
-            word,
-          }))
-            ? word
-            : '';
-        }),
-      );
-      callback(misspelled.filter((word) => word));
-    },
-  });
 
   // injects snack bar
   snackBar.initSnackBar();

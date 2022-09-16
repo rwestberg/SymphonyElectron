@@ -32,7 +32,6 @@ export enum apiCmds {
   getMediaSource = 'get-media-source',
   notification = 'notification',
   closeNotification = 'close-notification',
-  isMisspelled = 'is-misspelled',
   memoryInfo = 'memory-info',
   swiftSearch = 'swift-search',
   getConfigUrl = 'get-config-url',
@@ -49,7 +48,6 @@ export enum apiCmds {
   showNotification = 'show-notification',
   closeAllWrapperWindows = 'close-all-windows',
   setZoomLevel = 'set-zoom-level',
-  // autoUpdate = 'auto-update',
   aboutAppClipBoardData = 'about-app-clip-board-data',
   closeMainWindow = 'close-main-window',
   minimizeMainWindow = 'minimize-main-window',
@@ -70,6 +68,9 @@ export enum apiCmds {
   connectCloud9Pipe = 'connect-cloud9-pipe',
   writeCloud9Pipe = 'write-cloud9-pipe',
   closeCloud9Pipe = 'close-cloud9-pipe',
+  updateAndRestart = 'update-and-restart',
+  downloadUpdate = 'download-update',
+  checkForUpdates = 'check-for-updates',
 }
 
 export enum apiName {
@@ -274,6 +275,8 @@ export type NotificationActionCallback = (
   event: NotificationActions,
   data: INotificationData,
 ) => void;
+
+export type ConfigUpdateType = 'restart' | 'reload';
 
 export interface ICloud9Pipe {
   write(data: Uint8Array): void;

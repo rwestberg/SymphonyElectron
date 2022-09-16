@@ -11,6 +11,7 @@ import { IDownloadItem } from '../app/download-handler';
 import {
   apiCmds,
   apiName,
+  ConfigUpdateType,
   IBadgeCount,
   IBoundsChange,
   ICloud9Pipe,
@@ -67,6 +68,9 @@ export interface ILocalObject {
   collectLogsCallback?: Array<() => void>;
   analyticsEventHandler?: (arg: any) => void;
   restartFloater?: (arg: IRestartFloaterData) => void;
+  showClientBannerCallback?: Array<
+    (reason: string, action: ConfigUpdateType, data?: object) => void
+  >;
   c9PipeEventCallback?: (event: string, arg?: any) => void;
   c9MessageCallback?: (status: IShellStatus) => void;
 }
@@ -763,6 +767,21 @@ export class SSFApi {
   }
 
   /**
+   * Allows JS to register a function to display a client banner
+   * @param callback
+   */
+  public registerClientBanner(
+    callback: (reason: string, action: ConfigUpdateType) => void,
+  ): void {
+    if (!local.showClientBannerCallback) {
+      local.showClientBannerCallback = new Array<() => void>();
+    }
+    if (typeof callback === 'function') {
+      local.showClientBannerCallback.push(callback);
+    }
+  }
+
+  /**
    * Connects to a Cloud9 pipe
    *
    * @param pipe pipe name
@@ -833,6 +852,33 @@ export class SSFApi {
     local.c9MessageCallback = callback;
     ipcRenderer.send(apiName.symphonyApi, {
       cmd: apiCmds.launchCloud9,
+    });
+  }
+
+  /**
+   * Allows JS to install new update and restart SDA
+   */
+  public updateAndRestart(): void {
+    ipcRenderer.send(apiName.symphonyApi, {
+      cmd: apiCmds.updateAndRestart,
+    });
+  }
+
+  /**
+   * Allows JS to download the latest SDA updates
+   */
+  public downloadUpdate(): void {
+    ipcRenderer.send(apiName.symphonyApi, {
+      cmd: apiCmds.downloadUpdate,
+    });
+  }
+
+  /**
+   * Allows JS to check for updates
+   */
+  public checkForUpdates(): void {
+    ipcRenderer.send(apiName.symphonyApi, {
+      cmd: apiCmds.checkForUpdates,
     });
   }
 }
@@ -1062,6 +1108,22 @@ local.ipcRenderer.on('notification-actions', (_event, args) => {
   data.notificationData = args.notificationData;
   if (args && callback) {
     callback(args.event, data);
+  }
+});
+
+/**
+ * An event triggered by the main process on updating the cloud config
+ * @param {string[]}
+ */
+local.ipcRenderer.on('display-client-banner', (_event, args) => {
+  if (local.showClientBannerCallback) {
+    for (const callback of local.showClientBannerCallback) {
+      if (args.data) {
+        callback(args.reason, args.action, args.data);
+        return;
+      }
+      callback(args.reason, args.action);
+    }
   }
 });
 

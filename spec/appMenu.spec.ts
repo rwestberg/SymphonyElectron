@@ -38,6 +38,10 @@ jest.mock('../src/app/auto-launch-controller', () => {
   };
 });
 
+jest.mock('../src/app/auto-update-handler', () => {
+  return {};
+});
+
 jest.mock('../src/app/config-handler', () => {
   return {
     CloudConfigDataTypes: {
@@ -100,6 +104,7 @@ jest.mock('../src/app/window-utils', () => {
     windowExists: jest.fn(() => true),
     zoomIn: jest.fn(),
     zoomOut: jest.fn(),
+    reloadWindow: jest.fn(),
   };
 });
 

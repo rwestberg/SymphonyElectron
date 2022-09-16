@@ -29,32 +29,6 @@ class Script
 
         var userDataPathArgument = "--userDataPath=\"[USER_DATA_PATH]\"";
 
-        //Disabling auto-update service
-
-        // File updateService = new File(@"..\..\..\dist\win-unpacked\resources\app.asar.unpacked\node_modules\auto-update\auto_update_service.exe");
-        // updateService.ServiceInstaller = new ServiceInstaller
-        // {
-        //     Name = "auto_update_service",
-        //     DisplayName = "SDA Auto Update Service",
-        //     Description = "Symphony Desktop Application Auto Update Service",
-        //     FirstFailureActionType = FailureActionType.restart,
-        //     SecondFailureActionType = FailureActionType.restart,
-        //     ThirdFailureActionType = FailureActionType.restart,
-        //     RestartServiceDelayInSeconds = 60,
-        //     ResetPeriodInDays = 1,
-        //     ServiceSid = ServiceSid.none,
-        //     ConfigureServiceTrigger = ConfigureServiceTrigger.Install,
-        //     Type = SvcType.ownProcess,
-        //     Vital = true,
-        //     ErrorControl = SvcErrorControl.normal,
-        //     Start = SvcStartType.auto,
-        //     EraseDescription = false,
-        //     Interactive = false,
-        //     StartOn = SvcEvent.Install,
-        //     StopOn = SvcEvent.InstallUninstall_Wait,
-        //     RemoveOn = SvcEvent.Uninstall_Wait,
-        // };  
-
         // Create a wixsharp project instance and assign the project name to it, and a hierarchy of all files to include
         // Files are taken from multiple locations, and not all files in each location should be included, which is why
         // the file list is rather long and explicit. At some point we might make the `dist` folder match exactly the
@@ -75,7 +49,6 @@ class Script
                     }
                 ),
                 // updateService,
-                // new File(@"..\..\..\dist\win-unpacked\resources\app.asar.unpacked\node_modules\auto-update\auto_update_helper.exe"),
                 new File(@"..\..\..\dist\win-unpacked\chrome_100_percent.pak"),
                 new File(@"..\..\..\dist\win-unpacked\chrome_200_percent.pak"),
                 new File(@"..\..\..\dist\win-unpacked\d3dcompiler_47.dll"),
@@ -113,43 +86,9 @@ class Script
                     new DirFiles(@"..\..\..\dist\win-unpacked\resources\*.*"),
                     new Dir(@"app.asar.unpacked",
                         new Dir(@"node_modules",
-                            new Dir(@"@felixrieseberg\spellchecker\build\Release",
-                                new File(@"..\..\..\dist\win-unpacked\resources\app.asar.unpacked\node_modules\@felixrieseberg\spellchecker\build\Release\spellchecker.node")
-                            ),
-                            new Dir(@"cld\build\Release",
-                                new File(@"..\..\..\dist\win-unpacked\resources\app.asar.unpacked\node_modules\cld\build\Release\cld.node")
-                            ),
-                            new Dir(@"diskusage\build\Release",
-                                new File(@"..\..\..\dist\win-unpacked\resources\app.asar.unpacked\node_modules\diskusage\build\Release\diskusage.node")
-                            ),
-                            new Dir(@"ffi-napi\build\Release",
-                                new File(@"..\..\..\dist\win-unpacked\resources\app.asar.unpacked\node_modules\ffi-napi\build\Release\ffi_bindings.node")
-                            ),
-                            new Dir(@"keyboard-layout\build\Release",
-                                new File(@"..\..\..\dist\win-unpacked\resources\app.asar.unpacked\node_modules\keyboard-layout\build\Release\keyboard-layout-manager.node")
-                            ),
-                            new Dir(@"ffi-napi\node_modules\ref-napi\prebuilds\win32-x64",
-                                new File(@"..\..\..\dist\win-unpacked\resources\app.asar.unpacked\node_modules\ffi-napi\node_modules\ref-napi\prebuilds\win32-x64\electron.napi.node")
-                            ),
-                            new Dir(@"ref-napi\build\Release",
-                                new File(@"..\..\..\dist\win-unpacked\resources\app.asar.unpacked\node_modules\ref-napi\build\Release\binding.node")
-                            ),
-                            new Dir(@"spawn-rx",
-                                new Files(@"..\..\..\dist\win-unpacked\resources\app.asar.unpacked\node_modules\spawn-rx\*.*")
-                            ),
-                            new Dir(@"swift-search\node_modules",
-                                new Dir(@"ffi-napi\build\Release",
-                                    new File(@"..\..\..\dist\win-unpacked\resources\app.asar.unpacked\node_modules\swift-search\node_modules\ffi-napi\build\Release\ffi_bindings.node")
-                                ),
-                                new Dir(@"ref-napi\build\Release",
-                                    new File(@"..\..\..\dist\win-unpacked\resources\app.asar.unpacked\node_modules\swift-search\node_modules\ref-napi\build\Release\binding.node")
-                                )
-                            )
+                            new Files(@"..\..\..\dist\win-unpacked\resources\app.asar.unpacked\node_modules\*.*")
                         )
                     )
-                ),
-                new Dir(@"swiftshader",
-                    new Files(@"..\..\..\dist\win-unpacked\swiftshader\*.*")
                 ),
                 new Dir(@"cloud9",
                     new Files(@"..\..\..\dist\win-unpacked\cloud9\*.*")
@@ -161,7 +100,7 @@ class Script
             //    https://docs.microsoft.com/en-us/windows/win32/msi/operating-system-property-values
             new LaunchCondition("VersionNT>=600 AND WindowsBuild>=6001", "OS not supported"),
 
-            // Add registry entry used by protocol handler to launch symphony when opening symphony:// URIs         
+            // Add registry entry used by protocol handler to launch symphony when opening symphony:// URIs
             new RegValue(WixSharp.RegistryHive.ClassesRoot, productName, "", "URL:symphony"),
             new RegValue(WixSharp.RegistryHive.ClassesRoot, productName, "URL Protocol", ""),
             new RegValue(WixSharp.RegistryHive.ClassesRoot, productName + @"\shell\open\command", "", "\"[INSTALLDIR]Symphony.exe\" " + userDataPathArgument + " \"%1\""),
@@ -177,8 +116,7 @@ class Script
         // The build script which calls the wix# builder, will be run from a command environment which has %SYMVER% set.
         // So we just extract that version string, create a Version object from it, and pass it to out project definition.
         var version = System.Environment.GetEnvironmentVariable("SYMVER");
-        var versionReplacement = version.Replace("-", ".");
-        project.Version = new System.Version(versionReplacement);
+        project.Version = new System.Version(version);
 
         // To get the correct behaviour with upgrading the product, the product GUID needs to be different for every build,
         // but the UpgradeCode needs to stay the same. If we wanted to make a new major version and allow it to be installed

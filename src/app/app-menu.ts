@@ -16,7 +16,6 @@ import {
   AnalyticsElements,
   MenuActionTypes,
 } from './analytics-handler';
-import { autoLaunchInstance as autoLaunch } from './auto-launch-controller';
 import { CloudConfigDataTypes, config, IConfig } from './config-handler';
 import { gpuRestartDialog, titleBarChangeDialog } from './dialog-handler';
 import { exportCrashDumps, exportLogs } from './reports-handler';
@@ -25,7 +24,11 @@ import {
   unregisterConsoleMessages,
   updateAlwaysOnTop,
 } from './window-actions';
-import { ICustomBrowserWindow, windowHandler } from './window-handler';
+import {
+  ClientSwitchType,
+  ICustomBrowserWindow,
+  windowHandler,
+} from './window-handler';
 import {
   reloadWindow,
   resetZoomLevel,
@@ -33,6 +36,9 @@ import {
   zoomIn,
   zoomOut,
 } from './window-utils';
+
+import { autoLaunchInstance as autoLaunch } from './auto-launch-controller';
+import { autoUpdate } from './auto-update-handler';
 
 export const menuSections = {
   about: 'about',
@@ -68,6 +74,17 @@ const macAccelerator = {
   },
 };
 
+const menuItemConfigFields = [
+  'minimizeOnClose',
+  'launchOnStartup',
+  'alwaysOnTop',
+  'bringToFront',
+  'memoryRefresh',
+  'isCustomTitleBar',
+  'devToolsEnabled',
+  'isAutoUpdateEnabled',
+];
+
 let {
   minimizeOnClose,
   launchOnStartup,
@@ -76,16 +93,10 @@ let {
   memoryRefresh,
   isCustomTitleBar,
   devToolsEnabled,
-} = config.getConfigFields([
-  'minimizeOnClose',
-  'launchOnStartup',
-  'alwaysOnTop',
-  'bringToFront',
-  'memoryRefresh',
-  'isCustomTitleBar',
-  'devToolsEnabled',
-]) as IConfig;
+  isAutoUpdateEnabled,
+} = config.getConfigFields(menuItemConfigFields) as IConfig;
 let initialAnalyticsSent = false;
+const CORP_URL = 'https://corporate.symphony.com';
 
 const menuItemsArray = Object.keys(menuSections)
   .map((key) => menuSections[key])
@@ -104,15 +115,7 @@ export class AppMenu {
   constructor() {
     this.menuList = [];
     this.locale = i18n.getLocale();
-    this.menuItemConfigFields = [
-      'minimizeOnClose',
-      'launchOnStartup',
-      'alwaysOnTop',
-      'bringToFront',
-      'memoryRefresh',
-      'isCustomTitleBar',
-      'devToolsEnabled',
-    ];
+    this.menuItemConfigFields = menuItemConfigFields;
     this.cloudConfig = config.getFilteredCloudConfigFields(
       this.menuItemConfigFields,
     );
@@ -165,7 +168,6 @@ export class AppMenu {
   public buildMenu(): void {
     // updates the global variables
     this.updateGlobals();
-
     this.menuList = menuItemsArray.reduce(
       (map: Electron.MenuItemConstructorOptions, key: string) => {
         map[key] = this.buildMenuKey(key);
@@ -180,8 +182,6 @@ export class AppMenu {
 
     this.menu = Menu.buildFromTemplate(template);
     logger.info(`app-menu: built menu from the provided template`);
-    Menu.setApplicationMenu(this.menu);
-    logger.info(`app-menu: set application menu`);
 
     // Remove the default menu for window
     // as we use custom popup menu
@@ -190,6 +190,9 @@ export class AppMenu {
       if (mainWindow && windowExists(mainWindow)) {
         mainWindow.setMenuBarVisibility(false);
       }
+    } else {
+      logger.info(`app-menu: set application menu`);
+      Menu.setApplicationMenu(this.menu);
     }
   }
 
@@ -220,7 +223,7 @@ export class AppMenu {
     memoryRefresh = configData.memoryRefresh;
     isCustomTitleBar = configData.isCustomTitleBar;
     devToolsEnabled = configData.devToolsEnabled;
-
+    isAutoUpdateEnabled = configData.isAutoUpdateEnabled;
     // fetch updated cloud config
     this.cloudConfig = config.getFilteredCloudConfigFields(
       this.menuItemConfigFields,
@@ -279,6 +282,13 @@ export class AppMenu {
               : '';
             windowHandler.createAboutAppWindow(windowName);
           },
+        },
+        {
+          click: (_item) => {
+            autoUpdate.checkUpdates();
+          },
+          visible: isMac && !!isAutoUpdateEnabled && !!windowHandler.isMana,
+          label: i18n.t('Check for updates')(),
         },
         this.buildSeparator(),
         { label: i18n.t('Services')(), role: 'services' },
@@ -566,6 +576,7 @@ export class AppMenu {
     logger.info(`app-menu: building help menu`);
     let showLogsLabel: string = i18n.t('Show Logs in Explorer')();
     let showCrashesLabel: string = i18n.t('Show crash dump in Explorer')();
+
     if (isMac) {
       showLogsLabel = i18n.t('Show Logs in Finder')();
       showCrashesLabel = i18n.t('Show crash dump in Finder')();
@@ -576,6 +587,10 @@ export class AppMenu {
 
     const { devToolsEnabled: isDevToolsEnabledCC } = this
       .cloudConfig as IConfig;
+    const isCorp =
+      (windowHandler.url &&
+        windowHandler.url.startsWith('https://corporate.symphony.com')) ||
+      false;
 
     return {
       label: i18n.t('Help')(),
@@ -659,6 +674,14 @@ export class AppMenu {
           ],
         },
         {
+          click: (_item) => {
+            autoUpdate.checkUpdates();
+          },
+          visible:
+            isWindowsOS && !!isAutoUpdateEnabled && !!windowHandler.isMana,
+          label: i18n.t('Check for updates')(),
+        },
+        {
           label: i18n.t('About Symphony')(),
           visible: isWindowsOS || isLinux,
           click(_menuItem, focusedWindow) {
@@ -667,6 +690,30 @@ export class AppMenu {
               : '';
             windowHandler.createAboutAppWindow(windowName);
           },
+        },
+        {
+          click: (_item) =>
+            windowHandler.switchClient(ClientSwitchType.CLIENT_1_5),
+          visible: isCorp,
+          type: 'checkbox',
+          checked: windowHandler.url?.startsWith(CORP_URL + '/client/'),
+          label: i18n.t('Switch to client 1.5')(),
+        },
+        {
+          click: (_item) =>
+            windowHandler.switchClient(ClientSwitchType.CLIENT_2_0),
+          visible: isCorp,
+          type: 'checkbox',
+          checked: windowHandler.url?.startsWith(CORP_URL + '/client-bff'),
+          label: i18n.t('Switch to client 2.0')(),
+        },
+        {
+          click: (_item) =>
+            windowHandler.switchClient(ClientSwitchType.CLIENT_2_0_DAILY),
+          visible: isCorp,
+          type: 'checkbox',
+          checked: windowHandler.url?.startsWith(CORP_URL + '/bff-daily/daily'),
+          label: i18n.t('Switch to client 2.0 daily')(),
         },
       ],
     };
