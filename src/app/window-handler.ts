@@ -655,7 +655,7 @@ export class WindowHandler {
         `window-handler: main window closed, destroying all windows!`,
       );
       if (isWindowsOS || isMac) {
-        this.execCmd(this.screenShareIndicatorFrameUtil, []);
+        this.closeScreenSharingIndicator();
       }
       this.closeAllWindows();
       this.destroyAllWindows();
@@ -924,10 +924,7 @@ export class WindowHandler {
         }
         if (isWindowsOS || isMac) {
           const timeoutValue = 300;
-          setTimeout(
-            () => this.execCmd(this.screenShareIndicatorFrameUtil, []),
-            timeoutValue,
-          );
+          setTimeout(() => this.closeScreenSharingIndicator(), timeoutValue);
         } else {
           if (
             this.screenSharingFrameWindow &&
@@ -1452,7 +1449,7 @@ export class WindowHandler {
       if (source != null) {
         logger.info(`window-handler: screen-source-select`, source, id);
 
-        this.execCmd(this.screenShareIndicatorFrameUtil, []);
+        this.closeScreenSharingIndicator();
         const timeoutValue = 300;
         setTimeout(() => {
           this.drawScreenShareIndicatorFrame(source);
@@ -1473,7 +1470,7 @@ export class WindowHandler {
     ipcMain.once('screen-source-selected', (_event, source) => {
       logger.info(`window-handler: screen-source-selected`, source, id);
       if (source == null) {
-        this.execCmd(this.screenShareIndicatorFrameUtil, []);
+        this.closeScreenSharingIndicator();
         if (
           this.screenPickerPlaceholderWindow &&
           windowExists(this.screenPickerPlaceholderWindow)
@@ -1520,6 +1517,24 @@ export class WindowHandler {
         }
       }
     });
+  }
+
+  /**
+   * Closes a screen picker window if it exists
+   *
+   */
+  public closeScreenPickerWindow() {
+    if (this.screenPickerWindow && windowExists(this.screenPickerWindow)) {
+      this.screenPickerWindow.close();
+    }
+  }
+
+  /**
+   * Closes screen sharing indicator
+   *
+   */
+  public async closeScreenSharingIndicator() {
+    this.execCmd(this.screenShareIndicatorFrameUtil, []);
   }
 
   /**
@@ -2095,7 +2110,7 @@ export class WindowHandler {
         default:
           this.url = this.globalConfig.url + `?x-km-csrf-token=${csrfToken}`;
       }
-      await this.execCmd(this.screenShareIndicatorFrameUtil, []);
+      await this.closeScreenSharingIndicator();
       const userAgent = this.getUserAgent(this.mainWebContents);
       await this.mainWebContents.loadURL(this.url, { userAgent });
     } catch (e) {
