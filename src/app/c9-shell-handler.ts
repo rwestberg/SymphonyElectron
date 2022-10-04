@@ -102,6 +102,15 @@ class C9ShellHandler {
       ? customC9ShellArgs.substring(9).split(' ')
       : [];
 
+    // Check if a custom C9 rest server is requested, otherwise override with dev2
+    if (
+      customC9ShellArgList.findIndex(
+        (arg) => arg === '-r' || arg === '--restserver',
+      ) === -1
+    ) {
+      customC9ShellArgList.push('--restserver', 'https://rest.dev2.xhoot.com');
+    }
+
     logger.info('c9-shell: launching shell', c9ShellPath, customC9ShellArgList);
     this._updateStatus({ status: 'starting' });
 
