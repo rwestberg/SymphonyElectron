@@ -11,10 +11,16 @@ import { windowHandler } from './window-handler';
 
 const DEFAULT_AUTO_UPDATE_CHANNEL = 'client-bff/sda-update';
 
+export enum AutoUpdateTrigger {
+  MANUAL = 'MANUAL',
+  AUTOMATED = 'AUTOMATED',
+}
+
 export class AutoUpdate {
   public isUpdateAvailable: boolean = false;
   public didPublishDownloadProgress: boolean = false;
   public autoUpdater: MacUpdater | NsisUpdater | undefined = undefined;
+  private autoUpdateTrigger: AutoUpdateTrigger | undefined = undefined;
 
   constructor() {
     const opts = this.getGenericServerOptions();
@@ -28,8 +34,16 @@ export class AutoUpdate {
       this.autoUpdater.logger = electronLog;
       this.autoUpdater.autoDownload = false;
       this.autoUpdater.autoInstallOnAppQuit = true;
+      this.autoUpdater.allowDowngrade = true;
 
       this.autoUpdater.on('update-not-available', () => {
+        if (this.autoUpdateTrigger === AutoUpdateTrigger.AUTOMATED) {
+          logger.info(
+            'auto-update-handler: no update available found with automatic check',
+          );
+          this.autoUpdateTrigger = undefined;
+          return;
+        }
         const mainWebContents = windowHandler.mainWebContents;
         // Display client banner
         if (mainWebContents && !mainWebContents.isDestroyed()) {
@@ -38,6 +52,7 @@ export class AutoUpdate {
             action: 'update-not-available',
           });
         }
+        this.autoUpdateTrigger = undefined;
       });
 
       this.autoUpdater.on('update-available', (info) => {
@@ -81,6 +96,14 @@ export class AutoUpdate {
           });
         }
       });
+
+      this.autoUpdater.on('error', (error) => {
+        this.autoUpdateTrigger = undefined;
+        logger.error(
+          'auto-update-handler: Error occurred while updating. ',
+          error,
+        );
+      });
     }
   }
 
@@ -95,8 +118,9 @@ export class AutoUpdate {
     if (isMac) {
       windowHandler.setIsAutoUpdating(true);
     }
-    setImmediate(() => {
+    setImmediate(async () => {
       if (this.autoUpdater) {
+        await config.updateUserConfig({ startedAfterAutoUpdate: true });
         if (isMac) {
           config.backupGlobalConfig();
         }
@@ -109,8 +133,11 @@ export class AutoUpdate {
    * Checks for the latest updates
    * @return void
    */
-  public checkUpdates = async (): Promise<void> => {
-    logger.info('auto-update-handler: Checking for updates');
+  public checkUpdates = async (
+    trigger: AutoUpdateTrigger = AutoUpdateTrigger.MANUAL,
+  ): Promise<void> => {
+    this.autoUpdateTrigger = trigger;
+    logger.info('auto-update-handler: Checking for updates', trigger);
     if (this.autoUpdater) {
       const opts: GenericServerOptions = this.getGenericServerOptions();
       this.autoUpdater.setFeedURL(opts);

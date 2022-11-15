@@ -13,7 +13,6 @@ import {
   IApiArgs,
   INotificationData,
 } from '../common/api-interface';
-import { isMac } from '../common/env';
 import { i18n, LocaleType } from '../common/i18n';
 import { logger } from '../common/logger';
 import { activityDetection } from './activity-detection';
@@ -47,7 +46,7 @@ import {
   windowExists,
 } from './window-utils';
 
-import { autoUpdate } from './auto-update-handler';
+import { autoUpdate, AutoUpdateTrigger } from './auto-update-handler';
 
 // Swift search API
 let swiftSearchInstance;
@@ -248,6 +247,10 @@ ipcMain.on(
         if (typeof arg.isInMeeting === 'boolean') {
           memoryMonitor.setMeetingStatus(arg.isInMeeting);
           appStateHandler.preventDisplaySleep(arg.isInMeeting);
+          if (!arg.isInMeeting) {
+            windowHandler.closeScreenPickerWindow();
+            windowHandler.closeScreenSharingIndicator();
+          }
         }
         break;
       case apiCmds.memoryInfo:
@@ -349,9 +352,6 @@ ipcMain.on(
         break;
       case apiCmds.setPodUrl:
         await config.updateUserConfig({ url: arg.newPodUrl });
-        if (isMac) {
-          config.copyGlobalConfig();
-        }
         app.relaunch();
         app.exit();
         break;
@@ -385,7 +385,12 @@ ipcMain.on(
         autoUpdate.downloadUpdate();
         break;
       case apiCmds.checkForUpdates:
-        autoUpdate.checkUpdates();
+        const autoUpdateTrigger = arg.autoUpdateTrigger;
+        if (autoUpdateTrigger && autoUpdateTrigger in AutoUpdateTrigger) {
+          autoUpdate.checkUpdates(arg.autoUpdateTrigger);
+        } else {
+          autoUpdate.checkUpdates();
+        }
         break;
       default:
         break;

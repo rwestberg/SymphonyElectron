@@ -76,13 +76,12 @@ const windowSize: string | null = getCommandLineArgs(
 );
 
 export enum ClientSwitchType {
-  CLIENT_1_5 = 'CLIENT_1_5',
   CLIENT_2_0 = 'CLIENT_2_0',
   CLIENT_2_0_DAILY = 'CLIENT_2_0_DAILY',
 }
 
 const MAIN_WEB_CONTENTS_EVENTS = ['enter-full-screen', 'leave-full-screen'];
-const EXPORT_LOGS_THROTTLE = 1000; // 1sec
+const SHORTCUT_KEY_THROTTLE = 1000; // 1sec
 
 export interface ICustomBrowserWindowConstructorOpts
   extends Electron.BrowserWindowConstructorOptions {
@@ -395,11 +394,30 @@ export class WindowHandler {
     // SDA-3844 - workaround as local shortcuts not working
     const throttledExportLogs = throttle(() => {
       exportLogs();
-    }, EXPORT_LOGS_THROTTLE);
+    }, SHORTCUT_KEY_THROTTLE);
+    const switchToClient2 = throttle(() => {
+      windowHandler.switchClient(ClientSwitchType.CLIENT_2_0);
+    }, SHORTCUT_KEY_THROTTLE);
+    const switchToDaily = throttle(() => {
+      windowHandler.switchClient(ClientSwitchType.CLIENT_2_0_DAILY);
+    }, SHORTCUT_KEY_THROTTLE);
     this.mainWebContents.on('before-input-event', (event, input) => {
       if (input.control && input.shift && input.key.toLowerCase() === 'd') {
         event.preventDefault();
         throttledExportLogs();
+      }
+      const isCtrlOrMeta = isMac ? input.meta : input.control;
+      if (this.url && this.url.startsWith('https://corporate.symphony.com')) {
+        if (isCtrlOrMeta) {
+          switch (input.key) {
+            case '1':
+              switchToClient2();
+              break;
+            case '2':
+              switchToDaily();
+              break;
+          }
+        }
       }
     });
     if (isMaximized || isMaximizedFlag) {
@@ -655,7 +673,7 @@ export class WindowHandler {
         `window-handler: main window closed, destroying all windows!`,
       );
       if (isWindowsOS || isMac) {
-        this.execCmd(this.screenShareIndicatorFrameUtil, []);
+        this.closeScreenSharingIndicator();
       }
       this.closeAllWindows();
       this.destroyAllWindows();
@@ -924,10 +942,7 @@ export class WindowHandler {
         }
         if (isWindowsOS || isMac) {
           const timeoutValue = 300;
-          setTimeout(
-            () => this.execCmd(this.screenShareIndicatorFrameUtil, []),
-            timeoutValue,
-          );
+          setTimeout(() => this.closeScreenSharingIndicator(), timeoutValue);
         } else {
           if (
             this.screenSharingFrameWindow &&
@@ -1452,7 +1467,7 @@ export class WindowHandler {
       if (source != null) {
         logger.info(`window-handler: screen-source-select`, source, id);
 
-        this.execCmd(this.screenShareIndicatorFrameUtil, []);
+        this.closeScreenSharingIndicator();
         const timeoutValue = 300;
         setTimeout(() => {
           this.drawScreenShareIndicatorFrame(source);
@@ -1473,7 +1488,7 @@ export class WindowHandler {
     ipcMain.once('screen-source-selected', (_event, source) => {
       logger.info(`window-handler: screen-source-selected`, source, id);
       if (source == null) {
-        this.execCmd(this.screenShareIndicatorFrameUtil, []);
+        this.closeScreenSharingIndicator();
         if (
           this.screenPickerPlaceholderWindow &&
           windowExists(this.screenPickerPlaceholderWindow)
@@ -1523,6 +1538,24 @@ export class WindowHandler {
   }
 
   /**
+   * Closes a screen picker window if it exists
+   *
+   */
+  public closeScreenPickerWindow() {
+    if (this.screenPickerWindow && windowExists(this.screenPickerWindow)) {
+      this.screenPickerWindow.close();
+    }
+  }
+
+  /**
+   * Closes screen sharing indicator
+   *
+   */
+  public async closeScreenSharingIndicator() {
+    this.execCmd(this.screenShareIndicatorFrameUtil, []);
+  }
+
+  /**
    * Creates a Basic auth window whenever the network
    * requires authentications
    *
@@ -1541,17 +1574,20 @@ export class WindowHandler {
     clearSettings,
     callback,
   ): void {
+    if (this.basicAuthWindow && windowExists(this.basicAuthWindow)) {
+      this.basicAuthWindow.close();
+    }
+
     const opts = this.getWindowOpts(
       {
         width: 360,
         height: isMac ? 270 : 295,
-        alwaysOnTop: true,
+        alwaysOnTop: isMac,
         skipTaskbar: true,
         resizable: false,
         show: false,
         modal: true,
         frame: false,
-        transparent: true,
         fullscreenable: false,
         acceptFirstMouse: true,
       },
@@ -1574,13 +1610,13 @@ export class WindowHandler {
         isValidCredentials: isMultipleTries,
       });
     });
+
     const closeBasicAuth = (_event, shouldClearSettings = true) => {
       if (shouldClearSettings) {
         clearSettings();
       }
       if (this.basicAuthWindow && windowExists(this.basicAuthWindow)) {
         this.basicAuthWindow.close();
-        this.basicAuthWindow = null;
       }
     };
 
@@ -1591,6 +1627,7 @@ export class WindowHandler {
     };
 
     this.basicAuthWindow.once('close', () => {
+      this.basicAuthWindow = null;
       ipcMain.removeListener('basic-auth-closed', closeBasicAuth);
       ipcMain.removeListener('basic-auth-login', login);
     });
@@ -2083,9 +2120,6 @@ export class WindowHandler {
         `localStorage.getItem('x-km-csrf-token')`,
       );
       switch (clientSwitch) {
-        case ClientSwitchType.CLIENT_1_5:
-          this.url = this.startUrl + `?x-km-csrf-token=${csrfToken}`;
-          break;
         case ClientSwitchType.CLIENT_2_0:
           this.url = `https://${parsedUrl.hostname}/client-bff/index.html?x-km-csrf-token=${csrfToken}`;
           break;
@@ -2095,7 +2129,7 @@ export class WindowHandler {
         default:
           this.url = this.globalConfig.url + `?x-km-csrf-token=${csrfToken}`;
       }
-      await this.execCmd(this.screenShareIndicatorFrameUtil, []);
+      await this.closeScreenSharingIndicator();
       const userAgent = this.getUserAgent(this.mainWebContents);
       await this.mainWebContents.loadURL(this.url, { userAgent });
     } catch (e) {

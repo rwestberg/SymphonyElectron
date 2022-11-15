@@ -57,6 +57,7 @@ export interface IConfig {
   locale?: string;
   installVariant?: string;
   bootCount?: number;
+  startedAfterAutoUpdate?: boolean;
 }
 
 export interface IGlobalConfig {
@@ -401,6 +402,7 @@ class Config {
       filteredFields.buildNumber = buildNumber;
       filteredFields.installVariant = this.installVariant;
       filteredFields.bootCount = 0;
+      filteredFields.startedAfterAutoUpdate = false;
       logger.info(
         `config-handler: setting first time launch for build`,
         buildNumber,
@@ -412,6 +414,7 @@ class Config {
       buildNumber,
       installVariant: this.installVariant,
       bootCount: this.bootCount,
+      startedAfterAutoUpdate: false,
     });
   }
 
@@ -575,6 +578,17 @@ class Config {
     }
 
     if (
+      this.userConfig &&
+      (this.userConfig as IConfig).startedAfterAutoUpdate
+    ) {
+      // Update config as usual
+      await this.setUpFirstTimeLaunch();
+      // Skip welcome screen
+      this.isFirstTime = false;
+      return;
+    }
+
+    if (
       installVariant &&
       typeof installVariant === 'string' &&
       installVariant !== this.installVariant
@@ -693,9 +707,26 @@ class Config {
         `Global config file missing! App will not run as expected!`,
       );
     }
-    this.globalConfig = this.parseConfigData(
+    if (fs.existsSync(this.tempGlobalConfigFilePath)) {
+      this.globalConfig = this.parseConfigData(
+        fs.readFileSync(this.tempGlobalConfigFilePath, 'utf8'),
+      );
+      logger.info(
+        `config-handler: temp global config exists using this file: `,
+        this.tempGlobalConfigFilePath,
+        this.globalConfig,
+      );
+      if (isMac) {
+        this.copyGlobalConfig();
+      }
+      return;
+    }
+    const parsedConfigData = this.parseConfigData(
       fs.readFileSync(this.globalConfigPath, 'utf8'),
     );
+    if (parsedConfigData && Object.keys(parsedConfigData).length > 0) {
+      this.globalConfig = parsedConfigData;
+    }
     logger.info(`config-handler: Global configuration: `, this.globalConfig);
   }
 
