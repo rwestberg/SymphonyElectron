@@ -1,7 +1,7 @@
 {
   "name": "symphony",
   "productName": "Symphony",
-  "version": "19.0.99-1",
+  "version": "19.0.99-2",
   "clientVersion": "2.0.1",
   "buildNumber": "0",
   "searchAPIVersion": "1.55.3",
@@ -128,6 +128,13 @@
         {
           "from": "node_modules/@symphony/symphony-c9-shell/shell",
           "to": "cloud9/shell",
+          "filter": [
+            "**/*"
+          ]
+        },
+        {
+          "from": "node_modules/@symphony/symphony-c9-shell/integration",
+          "to": "cloud9/integration",
           "filter": [
             "**/*"
           ]
