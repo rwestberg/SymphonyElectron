@@ -102,7 +102,7 @@ describe('C9 shell handler', () => {
       });
     });
 
-    it('args', () => {
+    it.skip('args', () => {
       mockGetGuid.mockReturnValue('just-another-guid');
 
       const { loadC9Shell } = require('../src/app/c9-shell-handler');
