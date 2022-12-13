@@ -29,7 +29,8 @@ enum Permissions {
 const PERMISSIONS_NAMESPACE = 'Permissions';
 
 const saveWindowSettings = async (): Promise<void> => {
-  const browserWindow = BrowserWindow.getFocusedWindow() as ICustomBrowserWindow;
+  const browserWindow =
+    BrowserWindow.getFocusedWindow() as ICustomBrowserWindow;
   const mainWebContents = windowHandler.getMainWebContents();
 
   if (browserWindow && windowExists(browserWindow)) {
@@ -86,7 +87,8 @@ const saveWindowSettings = async (): Promise<void> => {
 };
 
 const windowMaximized = async (): Promise<void> => {
-  const browserWindow = BrowserWindow.getFocusedWindow() as ICustomBrowserWindow;
+  const browserWindow =
+    BrowserWindow.getFocusedWindow() as ICustomBrowserWindow;
   if (browserWindow && windowExists(browserWindow)) {
     const isMaximized = browserWindow.isMaximized();
     const isFullScreen = browserWindow.isFullScreen();
@@ -115,8 +117,10 @@ const throttledWindowChanges = throttle(async (eventName, window) => {
 const throttledWindowRestore = throttle(async () => {
   notification.moveNotificationToTop();
   const mainWebContents = windowHandler.getMainWebContents();
-  if (mainWebContents && !mainWebContents.isDestroyed()) {
-    mainWebContents.focus();
+  if (isWindowsOS) {
+    if (mainWebContents && !mainWebContents.isDestroyed()) {
+      mainWebContents.focus();
+    }
   }
 }, 1000);
 
@@ -214,7 +218,8 @@ export const updateAlwaysOnTop = async (
   logger.info(
     `window-actions: Should we set always on top? ${shouldSetAlwaysOnTop}!`,
   );
-  const browserWins: ICustomBrowserWindow[] = BrowserWindow.getAllWindows() as ICustomBrowserWindow[];
+  const browserWins: ICustomBrowserWindow[] =
+    BrowserWindow.getAllWindows() as ICustomBrowserWindow[];
   if (shouldUpdateUserConfig) {
     await config.updateUserConfig({
       alwaysOnTop: shouldSetAlwaysOnTop
@@ -262,7 +267,8 @@ export const handleKeyPress = (key: number): void => {
       if (isMac || isLinux || windowHandler.isCustomTitleBar) {
         return;
       }
-      const browserWin = BrowserWindow.getFocusedWindow() as ICustomBrowserWindow;
+      const browserWin =
+        BrowserWindow.getFocusedWindow() as ICustomBrowserWindow;
       if (
         browserWin &&
         windowExists(browserWin) &&
